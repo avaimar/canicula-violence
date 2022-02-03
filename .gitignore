@@ -1,0 +1,24 @@
+# Environments
+.env
+env/
+
+# Mac Files
+*.DS_Store
+
+# HTML files
+*.html
+
+# pycaches
+*__pycache__
+
+#Exploratory folder that should never be seen by other humans
+exploratory/
+
+#Local data folder
+data_raw_local/
+
+
+
+#.idea and cache files
+.idea/
+cache
