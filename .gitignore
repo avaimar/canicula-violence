@@ -22,3 +22,4 @@ data_raw_local/
 #.idea and cache files
 .idea/
 cache
+.Rproj.user
