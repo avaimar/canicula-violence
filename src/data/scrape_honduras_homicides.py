@@ -81,7 +81,7 @@ def query_municipality(dep, mun, year):
 
     # Verify dep, mun, year and calendar period
     heading = [[cell.text for cell in row.find_all(["th"])] for row in table.find_all("tr")][0][0]
-    query_dep = heading.split('Departamento de ')[1].split(' ')[0]
+    query_dep = heading.split('Departamento de ')[1].split(' del')[0]
     query_mun = heading.split('Municipio de ')[1].split(',')[0]
     query_date_st = heading.split('del ')[1].split(' a')[0]
     query_date_end = heading.split(' a ')[1][:11]
