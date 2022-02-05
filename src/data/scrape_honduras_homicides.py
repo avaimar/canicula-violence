@@ -155,7 +155,7 @@ for dep in DEPS:
     for mun in mun_dict[dep]:
         subset = homicide_table.loc[(homicide_table['Dep'] == dep) & (homicide_table['Mun'] == mun)]
         if len(subset) != len(list(YEARS)):
-            print('[WARNING] Departamentp {}, Municipality {}'.format(dep, mun))
+            print('[WARNING] Departamento {}, Municipality {}'.format(dep, mun))
 
 # Save final version
 homicide_table.to_csv('honduras_homicides.csv', index=False)
