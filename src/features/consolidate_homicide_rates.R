@@ -17,6 +17,8 @@ nicaragua_rates <- nicaragua_rates %>% mutate(Municipio=NA) %>%
 
 # * 1.2 El Salvador Municipality-Annual Homicide Counts -----------
 elsalvador <- read_csv('Data/Homicides/Processed/elsalvador_municipality_homicidecount_2011_2020.csv')
+elsalvador <- elsalvador %>% mutate(Municipio = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipio)) )
+elsalvador <- elsalvador %>% mutate(Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento) ))
 
 # * 1.3 Guatemala Municipality-Annual Homicide Counts -----------
 guatemala <- read_excel('Data/Homicides/Raw/Guatemala/consolidado homicidios por municipios por tipo de arma y sexo del 2001 al 2019 PNC (version corregida 18nov 2020).xlsx', sheet=2)
@@ -25,7 +27,7 @@ guatemala <- read_excel('Data/Homicides/Raw/Guatemala/consolidado homicidios por
 guatemala <- filter(guatemala, `medio/sexo` == 'todos') %>% select(-`medio/sexo`)
 
 # Melt
-guatemala <- melt(guatemala, id.vars = c('code', 'dpto', 'muni'), variable.name='Year', value.name = 'homicide_count')
+guatemala <- reshape2::melt(guatemala, id.vars = c('code', 'dpto', 'muni'), variable.name='Year', value.name = 'homicide_count')
 
 # Select period
 guatemala <- filter(guatemala, Year %in% temporal_period)
@@ -44,6 +46,11 @@ honduras <- honduras %>% mutate(Mun = chartr("ÁÉÍÓÚ", "AEIOU", Mun) )
 # 2. Load required population data -----------
 # * 2.1 El Salvador -----------
 elsalvador_pop <- read_csv('Data/Population/Raw/El_Salvador/population_estimates.csv')
+elsalvador_pop <- elsalvador_pop %>% 
+  mutate(Municipio = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipality)) ) %>% 
+  mutate(Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento) )) %>%
+  select(-Municipality) %>%
+  filter(Year %in% temporal_period)
 
 # * 2.2 Guatemala -----------
 guatemala_pop <- read_excel(
@@ -80,7 +87,7 @@ honduras_pop <- honduras_pop %>% select(
   -c(`2021`, `2022`, `2023`, `2024`, `2025`, `2026`, `2027`, `2028`, `2029`, `2030`, 'Total'))
 
 # Melt
-honduras_pop <- melt(honduras_pop, id.vars = c('Mun', 'Municipio'), variable.name='Year', value.name='Population')
+honduras_pop <- reshape2::melt(honduras_pop, id.vars = c('Mun', 'Municipio'), variable.name='Year', value.name='Population')
 honduras_pop <- honduras_pop %>% 
   mutate(Dep = gsub("AREA # ","", Mun)) %>%
   mutate(Mun = Municipio) %>% 
@@ -97,7 +104,8 @@ honduras_pop <- mutate(honduras_pop, Dep = (function(x) {honduras_dept_list[Dep]
 
 # 3. Merge -----------------------------------
 # * 3.1 El Salvador -----------
-# TODO 
+elsalvador_rates <- left_join(elsalvador, elsalvador_pop, by = c('Departamento', 'Municipio', 'Year'))
+elsalvador_rates <- mutate(elsalvador_rates, hom_rate_100k = hom_count / Population * 100000)
 
 # * 3.2 Guatemala -----------
 guatemala_rates <- left_join(guatemala, guatemala_pop, by = c('dpto', 'Municipio', 'Year'))
@@ -111,6 +119,14 @@ honduras_rates <- filter(honduras_rates, !is.na(Population))
 honduras_rates <- mutate(honduras_rates, hom_rate_100k = Count / Population * 100000)
 
 # 4. Consolidate -----------------------------
+guatemala_rates <- guatemala_rates %>% mutate(Country ='Guatemala') %>%
+  mutate(Departamento = dpto, Municipio=muni)
+
+elsalvador_rates <- elsalvador_rates %>% mutate(Country ='El Salvador')
+
+honduras_rates <- honduras_rates %>% mutate(Country ='Honduras') %>%
+  mutate(Departamento = Dep, Municipio=Mun)
+
 homicide_rates <- rbind(
   select(nicaragua_rates, c(Country, Departamento, Municipio, Year, hom_rate_100k)),
   select(guatemala_rates, c(Country, Departamento, Municipio, Year, hom_rate_100k)),
