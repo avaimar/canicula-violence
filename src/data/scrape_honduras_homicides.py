@@ -73,7 +73,7 @@ def query_municipality(dep, mun, year):
 
     # Generate table
     driver.find_element(By.CSS_SELECTOR, '.but_table').click()
-    sleep(1)
+    sleep(2)
 
     # Scrape table
     soup = BeautifulSoup(driver.page_source, features="html.parser")
@@ -106,6 +106,9 @@ def query_municipality(dep, mun, year):
     return homicidios
 
 
+#query_municipality('COMAYAGUA', 'EL ROSARIO', '2013')
+#load_municipality_list('COMAYAGUA')
+
 # Departamento list
 DEPS = ['ATLÁNTIDA', 'COLON', 'COMAYAGUA', 'COPAN', 'CORTES', 'CHOLUTECA',
         'EL PARAÍSO', 'FRANCISCO MORAZÁN', 'GRACIAS A DIOS', 'INTIBUCÁ',
@@ -113,7 +116,7 @@ DEPS = ['ATLÁNTIDA', 'COLON', 'COMAYAGUA', 'COPAN', 'CORTES', 'CHOLUTECA',
         'SANTA BÁRBARA', 'VALLE', 'YORO']
 YEARS = range(2013, 2021)
 OUTPUT_PATH = os.path.join(
-    '..', '..', 'Data', 'Processed', 'honduras_departamento_year_2013_2020.csv')
+    '..', '..', 'Data', 'Raw', 'honduras_departamento_year_2013_2020.csv')
 
 # Set up homicide table and query each departamento
 if os.path.exists(OUTPUT_PATH):
@@ -124,11 +127,15 @@ else:
     homicide_table = pd.DataFrame({'Dep': [], 'Mun': [], 'Year': [], 'Count': []})
     deps = DEPS
 
+# Set up municipality dictionary
+mun_dict = {}
+
 # Iterate
 for dep in tqdm(deps):
     print('[INFO] Querying departamento: {}'.format(dep))
     # Get municipalities
     mun_list = load_municipality_list(dep)
+    mun_dict[dep] = mun_list
 
     for mun in mun_list:
         for year in YEARS:
@@ -138,9 +145,17 @@ for dep in tqdm(deps):
                     'Dep': dep, 'Mun': mun, 'Year': year, 'Count': hom_count
                 }, ignore_index=True
             )
-
-# Save final counts table to csv
-homicide_table.to_csv(OUTPUT_PATH, index=False)
+        homicide_table.to_csv('honduras_homicides.csv', index=False)
 
 # Remove duplicates
-# TODO remove duplicate rows
+homicide_table.drop_duplicates(inplace=True)
+
+# Verify completeness
+for dep in DEPS:
+    for mun in mun_dict[dep]:
+        subset = homicide_table.loc[(homicide_table['Dep'] == dep) & (homicide_table['Mun'] == mun)]
+        if len(subset) != len(list(YEARS)):
+            print('[WARNING] Departamentp {}, Municipality {}'.format(dep, mun))
+
+# Save final version
+homicide_table.to_csv('honduras_homicides.csv', index=False)
