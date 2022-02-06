@@ -14,14 +14,19 @@ output_path <- file.path(processed_data_fpath, 'homicide_rates.csv')
 # * 1.1 Nicaragua Departamento-Annual Homicide Rates -----------
 nicaragua_rates <- read_csv(file.path(processed_data_fpath, 'nicaragua_departamento_year_2007_2020.csv'))
 nicaragua_rates <- filter(nicaragua_rates, Year %in% temporal_period)
-nicaragua_rates <- nicaragua_rates %>% mutate(Municipio=NA) %>%
-  mutate(Departamento=Departamentos) %>% select(-Departamentos) %>%
-  mutate(Country='Nicaragua')
+nicaragua_rates <- nicaragua_rates %>% 
+  mutate(Municipio=NA) %>%
+  mutate(Departamento=Departamentos) %>% 
+  select(-Departamentos) %>%
+  mutate(
+    Country='Nicaragua', 
+    Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento)))
 
 # * 1.2 El Salvador Municipality-Annual Homicide Counts -----------
 elsalvador <- read_csv(file.path(processed_data_fpath, 'elsalvador_municipality_homicidecount_2011_2020.csv'))
 elsalvador <- elsalvador %>% mutate(Municipio = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipio)) )
 elsalvador <- elsalvador %>% mutate(Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento) ))
+elsalvador <- mutate(elsalvador, Municipio = replace(Municipio, Municipio == "NUEVA ESPERANZA", "NUEVA ESPARTA"))
 
 # * 1.3 Guatemala Municipality-Annual Homicide Counts -----------
 guatemala <- read_excel(
@@ -47,7 +52,9 @@ guatemala <- guatemala %>% mutate(dpto=chartr("ÁÉÍÓÚ", "AEIOU", dpto)) %>%
 honduras <- read.csv(file.path(raw_data_fpath,'Homicides', 'Honduras', 'honduras_homicides.csv'))
 
 # Get rid of accents to merge with population data
-honduras <- honduras %>% mutate(Mun = chartr("ÁÉÍÓÚ", "AEIOU", Mun) )
+honduras <- honduras %>% mutate(
+  Mun = chartr("ÁÉÍÓÚ", "AEIOU", Mun), 
+  Dep = chartr("ÁÉÍÓÚ", "AEIOU", Dep))
 
 # 2. Load required population data -----------
 # * 2.1 El Salvador -----------
@@ -57,6 +64,7 @@ elsalvador_pop <- elsalvador_pop %>%
   mutate(Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento) )) %>%
   select(-Municipality) %>%
   filter(Year %in% temporal_period)
+
 
 # * 2.2 Guatemala -----------
 guatemala_pop <- read_excel(
@@ -141,3 +149,4 @@ homicide_rates <- rbind(
 
 # 5. Save ------------------------------------
 write.csv(homicide_rates, output_path, row.names = FALSE)
+
