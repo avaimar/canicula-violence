@@ -6,8 +6,11 @@ library(tidyverse)
 library(tidyr)
 
 # 1. Load data ----------------------------------
-homicides <- read_csv('Data/Homicides/Processed/elsalvador_municipality_homicidecount_2011_2020.csv')
-data <- pdftools::pdf_text('Data/Population/Raw/El_Salvador/Proyecciones_Municipales_tables.pdf')
+gdrive_fpath <- file.path("/Volumes/GoogleDrive-112161833434429421879/My Drive/Project") ##change this to point at google drive path
+raw_data_fpath <- file.path(gdrive_fpath, 'Data', 'Raw')
+processed_data_fpath <- file.path(gdrive_fpath, 'Data', 'Processed')
+homicides <- read_csv(file.path(processed_data_fpath, 'elsalvador_municipality_homicidecount_2011_2020.csv'))
+data <- pdftools::pdf_text(file.path(raw_data_fpath, 'Population', 'El_Salvador', 'Proyecciones_Municipales_tables.pdf'))
 
 # 2. Process ------------------------------------
 departments <- unique(homicides$Departamento)
@@ -56,7 +59,7 @@ for (page in data){
 }
 
 # 3. Save --------------------
-write.csv(population.table, 'Data/Population/Raw/El_Salvador/population_estimates.csv', 
+write.csv(population.table, file.path(raw_data_fpath, 'Population', 'El_Salvador', 'population_estimates.csv'),
           row.names=FALSE)
 
 

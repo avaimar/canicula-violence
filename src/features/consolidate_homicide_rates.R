@@ -5,23 +5,29 @@ library(tidyverse)
 
 # Parameters
 temporal_period <- c(2010:2020)
-output_path <- 'Data/Homicides/Processed/homicide_rates.csv'
+gdrive_fpath <- file.path("/Volumes/GoogleDrive-112161833434429421879/My Drive/Project") ##change this to point at google drive path
+raw_data_fpath <- file.path(gdrive_fpath, 'Data', 'Raw')
+processed_data_fpath <- file.path(gdrive_fpath, 'Data', 'Processed')
+output_path <- file.path(processed_data_fpath, 'homicide_rates.csv')
 
 # 1. Load data ---------------------------------
 # * 1.1 Nicaragua Departamento-Annual Homicide Rates -----------
-nicaragua_rates <- read_csv('Data/Homicides/Processed/nicaragua_departamento_year_2007_2020.csv')
+nicaragua_rates <- read_csv(file.path(processed_data_fpath, 'nicaragua_departamento_year_2007_2020.csv'))
 nicaragua_rates <- filter(nicaragua_rates, Year %in% temporal_period)
 nicaragua_rates <- nicaragua_rates %>% mutate(Municipio=NA) %>%
   mutate(Departamento=Departamentos) %>% select(-Departamentos) %>%
   mutate(Country='Nicaragua')
 
 # * 1.2 El Salvador Municipality-Annual Homicide Counts -----------
-elsalvador <- read_csv('Data/Homicides/Processed/elsalvador_municipality_homicidecount_2011_2020.csv')
+elsalvador <- read_csv(file.path(processed_data_fpath, 'elsalvador_municipality_homicidecount_2011_2020.csv'))
 elsalvador <- elsalvador %>% mutate(Municipio = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipio)) )
 elsalvador <- elsalvador %>% mutate(Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento) ))
 
 # * 1.3 Guatemala Municipality-Annual Homicide Counts -----------
-guatemala <- read_excel('Data/Homicides/Raw/Guatemala/consolidado homicidios por municipios por tipo de arma y sexo del 2001 al 2019 PNC (version corregida 18nov 2020).xlsx', sheet=2)
+guatemala <- read_excel(
+  file.path(raw_data_fpath, 'Homicides', 'Guatemala', 
+            'consolidado homicidios por municipios por tipo de arma y sexo del 2001 al 2019 PNC (version corregida 18nov 2020).xlsx'),
+  sheet=2)
 
 # Select homicide totals
 guatemala <- filter(guatemala, `medio/sexo` == 'todos') %>% select(-`medio/sexo`)
@@ -38,14 +44,14 @@ guatemala <- guatemala %>% mutate(dpto=chartr("ÁÉÍÓÚ", "AEIOU", dpto)) %>%
   mutate(Municipio=chartr("ÁÉÍÓÚ", "AEIOU", Municipio))
 
 # * 1.4 Honduras Municipality-Annual Homicide Counts (2013-2020) -----------
-honduras <- read.csv('Data/Homicides/Raw/Honduras/honduras_homicides.csv')
+honduras <- read.csv(file.path(raw_data_fpath,'Homicides', 'Honduras', 'honduras_homicides.csv'))
 
 # Get rid of accents to merge with population data
 honduras <- honduras %>% mutate(Mun = chartr("ÁÉÍÓÚ", "AEIOU", Mun) )
 
 # 2. Load required population data -----------
 # * 2.1 El Salvador -----------
-elsalvador_pop <- read_csv('Data/Population/Raw/El_Salvador/population_estimates.csv')
+elsalvador_pop <- read_csv(file.path(raw_data_fpath, 'Population', 'El_Salvador', 'population_estimates.csv'))
 elsalvador_pop <- elsalvador_pop %>% 
   mutate(Municipio = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipality)) ) %>% 
   mutate(Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento) )) %>%
@@ -54,7 +60,7 @@ elsalvador_pop <- elsalvador_pop %>%
 
 # * 2.2 Guatemala -----------
 guatemala_pop <- read_excel(
-  'Data/Population/Raw/Guatemala/proyecciones-poblacion-2014-2022v3.xlsx',
+  file.path(raw_data_fpath, 'Population', 'Guatemala', 'proyecciones-poblacion-2014-2022v3.xlsx'),
   skip=4, n_max=3050, range='A5:F3055')
 guatemala_pop <- guatemala_pop %>% filter(!is.na(`Año`)) %>% 
   select(-`Area de Salud`) %>%
@@ -76,7 +82,7 @@ guatemala_pop <- guatemala_pop %>% mutate(dpto=chartr("ÁÉÍÓÚ", "AEIOU", dpt
 
 # * 2.3 Honduras -----------
 honduras_pop <- read_excel(
-  'Data/Population/Raw/Honduras/reporte.xls', skip=11, 
+  file.path(raw_data_fpath, 'Population', 'Honduras', 'reporte.xls'), skip=11, 
   col_names=c('Mun', 2013:2030, 'Total'), n_max=2280)
 honduras_pop <- honduras_pop %>% filter(!is.na(Mun)) %>% 
   filter(!Mun %in% c('Area', 'Urbano', 'Rural'))
