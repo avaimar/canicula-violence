@@ -45,8 +45,8 @@ guatemala <- filter(guatemala, Year %in% temporal_period)
 guatemala <- mutate(guatemala, Municipio = toupper(muni))
 
 # Remove accents
-guatemala <- guatemala %>% mutate(dpto=chartr("ÁÉÍÓÚ", "AEIOU", dpto)) %>%
-  mutate(Municipio=chartr("ÁÉÍÓÚ", "AEIOU", Municipio))
+guatemala <- guatemala %>% mutate(dpto=chartr("ÁÉÍÓÚ", "AEIOU", toupper(dpto))) %>%
+  mutate(Municipio=chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipio)))
 
 # * 1.4 Honduras Municipality-Annual Homicide Counts (2013-2020) -----------
 honduras <- read.csv(file.path(raw_data_fpath,'Homicides', 'Honduras', 'honduras_homicides.csv'))
@@ -85,8 +85,8 @@ guatemala_pop <- mutate(guatemala_pop, Municipio = replace(Municipio, Municipio 
 guatemala_pop <- mutate(guatemala_pop, dpto = replace(dpto, dpto == "EL PETEN", "PETEN"))
 
 # Remove accents
-guatemala_pop <- guatemala_pop %>% mutate(dpto=chartr("ÁÉÍÓÚ", "AEIOU", dpto)) %>%
-  mutate(Municipio=chartr("ÁÉÍÓÚ", "AEIOU", Municipio))
+guatemala_pop <- guatemala_pop %>% mutate(dpto=chartr("ÁÉÍÓÚ", "AEIOU", toupper(dpto))) %>%
+  mutate(Municipio=chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipio)))
 
 # * 2.3 Honduras -----------
 honduras_pop <- read_excel(
@@ -134,7 +134,7 @@ honduras_rates <- mutate(honduras_rates, hom_rate_100k = Count / Population * 10
 
 # 4. Consolidate -----------------------------
 guatemala_rates <- guatemala_rates %>% mutate(Country ='Guatemala') %>%
-  mutate(Departamento = dpto, Municipio=muni)
+  mutate(Departamento = dpto, Municipio=Municipio)
 
 elsalvador_rates <- elsalvador_rates %>% mutate(Country ='El Salvador')
 

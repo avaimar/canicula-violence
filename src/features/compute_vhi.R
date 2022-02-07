@@ -17,51 +17,8 @@ YEAR_RANGE <- c(2010:2020)
 WEEK_RANGE <- c(27:35)
 
 
-#2. Preprocess municipality/department shapefiles ----
-#create sf for all countries at spatial aggregation of interest (municipality for HND, ELS, GTM and dept for NIC)
-# read in all 4 shapefiles
-shape_fpaths <- list.files(file.path(raw_data_fpath, "Shapefiles"), pattern = 'geoBoundaries.*', full.names = T)
-#(shapeType = 'ADM1' denotes department, shapeType = 'ADM2' denotes municipality)
-#read in boundary shapefile and drop "shapeISO" column if it exists (only exists for department-level files)
-read_boundary_shapefile <- function(f) {
-  s = st_read(f)
-  return(s[,!names(s) == "shapeISO"])
-}
-admin_bndry_sf <- do.call(rbind, lapply(boundary_shape_fpaths, read_boundary_shapefile))
-#replace all names to match homicide files
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Ahuachpan", "AHUACHAPAN"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Chiltiupán", "CHITIUPAN"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Ciudad Ilobasco", "ILOBASCO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Ciudad Barrios", "CUIDAD BARRIOS"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Delgado", "CIUDAD DELGADO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Yucuaiquin", "YUCUALQUIN"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == 'Tepetitan', "TEPETITLAN"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == 'San Raimundo', "San Raymundo"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == 'Teujutepeque', "TEJUTEPEQUE"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == 'San Marcos de Sierra', "SAN MARCOS DE LA SIERRA"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == 'Juan Francisco  Bulnes', "JUAN FRANCISCO BULNES"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "San Jose Cancasque", "SAN JOSE CONCASQUE"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Quelepa", "QUELAPA"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Concepcion Quezaltepeque", "CONCEPCION QUEZALTEPQUE"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Chalatenago", "CHALATENANGO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Jocoaitique", "JOCOATIQUE"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "San Francsico Chinameca", "SAN FRANCISCO CHINAMECA"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Opico", "SAN JUAN OPICO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Meanguera del Golfo", "MEANGARA DEL GOLFO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "San Ildefonso", "SAN IDELFONSO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Ramón Villeda Morales", "VILLEDA MORALES"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Guacoteci", "GUACOTECTI"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Potonico", "POTANICO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "San Antonia Los Ranchos", "SAN ANTONIO LOS RANCHOS"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "San Emigdo", "SAN EMIGDIO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "San Luis de la Reina", "SAN LUIS REINA"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "Matagalpa (Departemento)","MATAGALPA"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "North Carribean Coast Autonomous Region","RACCN"))
-admin_bndry_sf <- mutate(admin_bndry_sf, shapeName = replace(shapeName, shapeName == "South Atlantic Autonomous Region", "RACCS" ))
-admin_bndry_sf <- admin_bndry_sf  %>% mutate(shapeName = chartr("ÁÉÍÓÚ", "AEIOU", toupper(shapeName) ))
-
-#write this cleaned shapefile out so we don't have to do this again
-st_write(admin_bndry_sf, file.path(processed_data_fpath, 'cleaned_admin_boundaries.geojson'))
+#2. Read in municipality/department shapefiles ----
+admin_bndry_sf <- st_read( file.path(processed_data_fpath, 'cleaned_admin_boundaries.geojson'))
 
 #3.  Preprocess VHI Raster Data -----
 #read in vhi data during YEAR_RANGE/, WEEK_RANGE and crop to 4 countries of interest 
