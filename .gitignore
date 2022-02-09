@@ -14,12 +14,16 @@ env/
 #Exploratory folder that should never be seen by other humans
 exploratory/
 
-#Local data folder
+#Local data folder and results folder
 data_raw_local/
+results/
 
 
-
-#.idea and cache files
+#.idea and R poops
 .idea/
 cache
-.Rproj.user
+*.Rproj*
+.RData
+.Rhistory
+
+
