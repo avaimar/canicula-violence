@@ -14,10 +14,10 @@ env/
 #Exploratory folder that should never be seen by other humans
 exploratory/
 
-#Local data folder and results folder
-data_raw_local/
-results/
-
+#Local data folder contents and results folder contents
+data_raw_local/*
+results/tables/*
+results/figures/*
 
 #.idea and R poops
 .idea/
