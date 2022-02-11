@@ -1,9 +1,7 @@
 library(raster)
 library(sf)
-library(sp)
 library(exactextractr)
 library(tidyverse)
-library(RColorBrewer)
 
 #1. Set paths and parameters -----
 #gdrive data paths
@@ -71,92 +69,77 @@ st_write(munic_sf,
 #4. Create shapefile at desired administrative levels for homicide join ----
 # Create sdf with one row for each NIC department with a null Municip
 # subset department sdf to nicaragua
-nic_dept_sf <- dept_sf %>% 
+nic_dept_sf <- dept_sf %>%
   filter(shapeGroup == "NIC") %>%
   mutate(Municipio = NA) %>%
-  rename(Departamento = shapeName )
+  rename(Departamento = shapeName)
 # subset munic sdf with department col to not include nicaragua
-munic_sf_no_nic <- munic_sf %>% 
+munic_sf_no_nic <- munic_sf %>%
   filter(shapeGroup != "NIC")
 # combine
-admin_bndry_sf<- rbind(munic_sf_no_nic, nic_dept_sf)
+admin_bndry_sf <- rbind(munic_sf_no_nic, nic_dept_sf)
 
 #5. Clean names  ----
 #replace all names to match homicide files
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Ahuachpan", "AHUACHAPAN"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Chiltiupán", "CHITIUPAN"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-   Municipio = replace(Municipio, Municipio == "Ciudad Ilobasco", "ILOBASCO"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Ciudad Barrios", "CUIDAD BARRIOS"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Delgado", "CIUDAD DELGADO"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Yucuaiquin", "YUCUALQUIN"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Tepetitan", "TEPETITLAN"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "San Raimundo", "San Raymundo"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-   Municipio = replace(Municipio, Municipio == "Teujutepeque", "TEJUTEPEQUE"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "San Marcos de Sierra", "SAN MARCOS DE LA SIERRA"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Juan Francisco  Bulnes", "JUAN FRANCISCO BULNES"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "San Jose Cancasque", "SAN JOSE CONCASQUE"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Quelepa", "QUELAPA"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Concepcion Quezaltepeque", "CONCEPCION QUEZALTEPQUE"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Chalatenago", "CHALATENANGO"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Jocoaitique", "JOCOATIQUE"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "San Francsico Chinameca", "SAN FRANCISCO CHINAMECA"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Opico", "SAN JUAN OPICO"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Meanguera del Golfo", "MEANGARA DEL GOLFO"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-Municipio = replace(Municipio, Municipio == "San Ildefonso", "SAN IDELFONSO"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Ramón Villeda Morales", "VILLEDA MORALES"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "Guacoteci", "GUACOTECTI"))
-admin_bndry_sf <- mutate(admin_bndry_sf,  
-  Municipio = replace(Municipio, Municipio == "Potonico", "POTANICO"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "San Antonia Los Ranchos", "SAN ANTONIO LOS RANCHOS"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Municipio = replace(Municipio, Municipio == "San Emigdo", "SAN EMIGDIO"))
-admin_bndry_sf <- mutate(admin_bndry_sf, 
-  Municipio = replace(Municipio, Municipio == "San Luis de la Reina", "SAN LUIS REINA"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Departamento = replace(Departamento, Departamento == "North Carribean Coast Autonomous Region","RACCN"))
-admin_bndry_sf <- mutate(admin_bndry_sf,
-  Departamento = replace(Departamento, Departamento == "South Atlantic Autonomous Region", "RACCS"))
-admin_bndry_sf <- mutate(admin_bndry_sf, 
-  Departamento = replace(Departamento, Departamento == "Bay Islands", "ISLAS DE LA BAHIA"))
+admin_bndry_sf <- admin_bndry_sf  %>%
+  mutate(
+    Municipio = case_when(
+      Municipio == "Ahuachpan" ~ "AHUACHAPAN",
+      Municipio == "Chiltiupán" ~ "CHITIUPAN",
+      Municipio == "Ciudad Ilobasco" ~ "ILOBASCO",
+      Municipio == "Ciudad Barrios" ~ "CUIDAD BARRIOS",
+      Municipio == "Delgado" ~ "CIUDAD DELGADO",
+      Municipio == "Yucuaiquin" ~ "YUCUALQUIN",
+      Municipio == "Tepetitan" ~ "TEPETITLAN",
+      Municipio == "San Raimundo" ~ "San Raymundo",
+      Municipio == "Teujutepeque" ~ "TEJUTEPEQUE",
+      Municipio == "San Marcos de Sierra" ~ "SAN MARCOS DE LA SIERRA",
+      Municipio == "Juan Francisco  Bulnes" ~ "JUAN FRANCISCO BULNES",
+      Municipio == "San Jose Cancasque" ~ "SAN JOSE CONCASQUE",
+      Municipio == "Quelepa" ~ "QUELAPA",
+      Municipio == "Concepcion Quezaltepeque" ~ "CONCEPCION QUEZALTEPQUE",
+      Municipio == "Chalatenago" ~ "CHALATENANGO",
+      Municipio == "Jocoaitique" ~ "JOCOATIQUE",
+      Municipio == "San Francsico Chinameca" ~ "SAN FRANCISCO CHINAMECA",
+      Municipio == "Opico" ~ "SAN JUAN OPICO",
+      Municipio == "Meanguera del Golfo" ~ "MEANGARA DEL GOLFO",
+      Municipio == "San Ildefonso" ~ "SAN IDELFONSO",
+      Municipio == "Ramón Villeda Morales" ~ "VILLEDA MORALES",
+      Municipio == "Guacoteci" ~ "GUACOTECTI",
+      Municipio == "Potonico" ~ "POTANICO",
+      Municipio == "San Antonia Los Ranchos" ~ "SAN ANTONIO LOS RANCHOS",
+      Municipio == "San Emigdo" ~ "SAN EMIGDIO",
+      Municipio == "San Luis de la Reina" ~ "SAN LUIS REINA",
+      TRUE ~ Municipio),
+    Departamento = case_when(
+      Departamento == "North Carribean Coast Autonomous Region" ~"RACCN",
+      Departamento == "South Atlantic Autonomous Region" ~ "RACCS",
+      Departamento == "Bay Islands" ~ "ISLAS DE LA BAHIA",
+      TRUE ~ Departamento),
+)
 
 #remove (Departmento de *) and (* Departamento) patterns
-admin_bndry_sf$Departamento <- gsub(
-  " \\(Departamento)", "", admin_bndry_sf$Departamento)
-admin_bndry_sf$Departamento <- gsub(
-    " \\(Departemento)", "", admin_bndry_sf$Departamento)
-admin_bndry_sf$Departamento <- gsub(
-    "Departamento de ", "", admin_bndry_sf$Departamento)
+admin_bndry_sf <- admin_bndry_sf %>%
+  mutate(
+    Departamento = gsub(" \\(Departamento)", "", Departamento),
+    Departamento = gsub(" \\(Departemento)", "", Departamento),
+    Departamento = gsub("Departamento de ", "", Departamento))
 
 #remove accents
-admin_bndry_sf <- admin_bndry_sf  %>% 
-  mutate(Municipio = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipio)), 
+admin_bndry_sf <- admin_bndry_sf  %>%
+  mutate(Municipio = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipio)),
         Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento))) %>%
   select(c("shapeID", "shapeGroup", "Departamento", "Municipio", "geometry"))
 
 #write out cleaned shapefile
-st_write(admin_bndry_sf, 
+st_write(admin_bndry_sf,
   file.path(processed_data_fpath, "cleaned_admin_boundaries.geojson"),
   delete_dsn = T)
+
+### Tests for same columns as homicide Df
+# hom_df <- read.csv(file.path(processed_data_fpath, 'homicide_rates.csv'))
+# setdiff(hom_df$Municipio, admin_bndry_sf$Municipio)
+# setdiff(admin_bndry_sf$Municipio, hom_df$Municipio)
+
+# setdiff(hom_df$Departamento,admin_bndry_sf$Departamento)
+# setdiff(admin_bndry_sf$Departamento, hom_df$Departamento)
