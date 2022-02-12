@@ -1,4 +1,5 @@
 # 0. Working set up ----------------------------
+library(ggplot2)
 library(readxl)
 library(reshape2)
 library(tidyverse)
@@ -189,8 +190,26 @@ guatemala_rates <- filter(guatemala_rates, !is.na(Population))
 # Compute homicide rate per 100,000 inhabitants
 guatemala_rates <- guatemala_rates %>%
   mutate(guatemala_rates, hom_rate_100k = homicide_count / Population * 100000) %>%
-  select(-c(homicide_count, Population))
+  select(-c(homicide_count))
 
 # 5. Save ------------------------------------
 write.csv(guatemala_rates, output_path, row.names = FALSE)
 
+# 6. Validate --------------------------------
+# * Check national trends
+national_trend <- guatemala_rates %>% group_by(Year) %>% 
+  summarise(nat_rate = weighted.mean(hom_rate_100k, Population))
+ggplot(national_trend, aes(x=Year, y=nat_rate)) + geom_line()
+# Note: trend follows national reports (p. 2) found at
+# https://mingob.gob.gt/wp-content/uploads/2021/02/Infografi%CC%81a-Ana%CC%81lisis-de-Seguridad-Ciudadana-2019.pdf
+
+# * Check outliers
+head(arrange(guatemala_rates, desc(hom_rate_100k)))
+
+# SAN JOSE (PETEN) rate of 533. This is directly in line with police
+# reports for 2020 (see raw data, page. 103). Note that rates in reports
+# are computed per 10k inhabitants. Slight difference stems from use of 
+# old population projections for 2020. 
+
+# Numbers for San Jose (Escuintla) and Nueva Concepcion match those of Dialogos
+# https://www.dialogos.org.gt/sites/default/files/2020-03/Informe-SEMESTRAL-sobre-la-Violencia-Homicida-en-Guatemala-2018-ver-FINAL.pdf
