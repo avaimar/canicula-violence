@@ -41,12 +41,11 @@ for (page in data){
   
   # Fix Municipality, drop non-municipality columns
   table <- filter(table, `2010` != '')
-  table <- table %>% tidyr::separate(Municipality, c("drop", "Municipality"), sep='-') %>%
-    select(-drop)
+  table <- table %>% tidyr::separate(Municipality, c("Mun_code", "Municipality"), sep='-')
   
   # Reshape / melt
   table <- reshape::melt(
-    data=table, id.vars=c('Municipality'), variable_name='Year')
+    data=table, id.vars=c('Municipality', 'Mun_code'), variable_name='Year')
   table <- mutate(table, Population = as.numeric(gsub(',', '', value)))
   table <- select(table, -value)
   
