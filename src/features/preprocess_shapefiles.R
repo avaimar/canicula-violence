@@ -85,31 +85,42 @@ admin_bndry_sf <- admin_bndry_sf  %>%
   mutate(
     Municipio = case_when(
       Municipio == "Ahuachpan" ~ "AHUACHAPAN",
-      Municipio == "Chiltiupán" ~ "CHITIUPAN",
+      #Municipio == "Chiltiupán" ~ "CHITIUPAN",
       Municipio == "Ciudad Ilobasco" ~ "ILOBASCO",
-      Municipio == "Ciudad Barrios" ~ "CUIDAD BARRIOS",
-      Municipio == "Delgado" ~ "CIUDAD DELGADO",
-      Municipio == "Yucuaiquin" ~ "YUCUALQUIN",
-      Municipio == "Tepetitan" ~ "TEPETITLAN",
+      #Municipio == "Ciudad Barrios" ~ "CUIDAD BARRIOS",
+      #Municipio == "Delgado" ~ "CIUDAD DELGADO",
+      #Municipio == "Yucuaiquin" ~ "YUCUALQUIN",
+      #Municipio == "Tepetitan" ~ "TEPETITLAN",
       Municipio == "San Raimundo" ~ "San Raymundo",
       Municipio == "Teujutepeque" ~ "TEJUTEPEQUE",
       Municipio == "San Marcos de Sierra" ~ "SAN MARCOS DE LA SIERRA",
       Municipio == "Juan Francisco  Bulnes" ~ "JUAN FRANCISCO BULNES",
       Municipio == "San Jose Cancasque" ~ "SAN JOSE CONCASQUE",
-      Municipio == "Quelepa" ~ "QUELAPA",
-      Municipio == "Concepcion Quezaltepeque" ~ "CONCEPCION QUEZALTEPQUE",
+      #Municipio == "Quelepa" ~ "QUELAPA",
+      #Municipio == "Concepcion Quezaltepeque" ~ "CONCEPCION QUEZALTEPQUE",
       Municipio == "Chalatenago" ~ "CHALATENANGO",
-      Municipio == "Jocoaitique" ~ "JOCOATIQUE",
+      #Municipio == "Jocoaitique" ~ "JOCOATIQUE",
       Municipio == "San Francsico Chinameca" ~ "SAN FRANCISCO CHINAMECA",
       Municipio == "Opico" ~ "SAN JUAN OPICO",
-      Municipio == "Meanguera del Golfo" ~ "MEANGARA DEL GOLFO",
-      Municipio == "San Ildefonso" ~ "SAN IDELFONSO",
+      Municipio == "Meanguera del Golfo" ~ "MEANGUERA DEL GOLFO",
+      #Municipio == "San Ildefonso" ~ "SAN IDELFONSO",
       Municipio == "Ramón Villeda Morales" ~ "VILLEDA MORALES",
       Municipio == "Guacoteci" ~ "GUACOTECTI",
-      Municipio == "Potonico" ~ "POTANICO",
+      #Municipio == "Potonico" ~ "POTANICO",
       Municipio == "San Antonia Los Ranchos" ~ "SAN ANTONIO LOS RANCHOS",
       Municipio == "San Emigdo" ~ "SAN EMIGDIO",
-      Municipio == "San Luis de la Reina" ~ "SAN LUIS REINA",
+      #Municipio == "San Luis de la Reina" ~ "SAN LUIS REINA",
+      Departamento == 'San Marcos' & Municipio == "Ayutla" ~ "AYUTLA O TECUN UMAN",
+      Departamento == 'Quetzaltenango' & Municipio == 'San Miguel Sigüila' ~ 'SAN MIGUEL SIGUILA',
+      Departamento == 'Chiquimula' & Municipio == 'San Juan Ermita' ~ 'SAN JUAN ERMINTA',
+      Departamento == 'Chiquimula' & Municipio == 'Quezaltepeque' ~ 'QUETZALTEPEQUE',
+      Departamento == 'Departamento de Sonsonate' & Municipio == 'Santo Domingo' ~ 'SANTO DOMINGO DE GUZMAN',
+      Departamento == 'La Libertad' & Municipio == 'Antiguo Cuscatlan' ~ 'ANTIGUO CUSCATAN',
+      Departamento == 'Departamento de San Miguel' & Municipio == 'San Rafael' ~ 'SAN RAFAEL ORIENTE',
+      Departamento == 'Departamento de Chalatenango' & Municipio == 'San Ingnacio' ~ 'SAN IGNACIO',
+      Departamento == 'Copán' & Municipio == 'Cabana' ~ 'CABAÑAS',
+      Departamento == 'La Paz' & Municipio == 'Cabanas' ~ 'CABAÑAS',
+      Departamento == 'Departamento de Chalatenango' & Municipio == 'San Jose Las Flores' ~ 'LAS FLORES',
       TRUE ~ Municipio),
     Departamento = case_when(
       Departamento == "North Carribean Coast Autonomous Region" ~"RACCN",
@@ -138,8 +149,26 @@ st_write(admin_bndry_sf,
 
 ### Tests for same columns as homicide Df
 # hom_df <- read.csv(file.path(processed_data_fpath, 'homicide_rates.csv'))
-# setdiff(hom_df$Municipio, admin_bndry_sf$Municipio)
-# setdiff(admin_bndry_sf$Municipio, hom_df$Municipio)
+pending_hom <- setdiff(hom_df$Municipio, admin_bndry_sf$Municipio)
+pending_admin <- setdiff(admin_bndry_sf$Municipio, hom_df$Municipio)
+
+#length(setdiff(hom_df$Municipio, admin_bndry_sf$Municipio))
+#length(setdiff(admin_bndry_sf$Municipio, hom_df$Municipio))
 
 # setdiff(hom_df$Departamento,admin_bndry_sf$Departamento)
 # setdiff(admin_bndry_sf$Departamento, hom_df$Departamento)
+
+# Note: We have missing data for 14 municipalities in El Salvador, and 
+# 7 from Guatemala
+salvador_missings <- c("SANTA ANA" , "SONSONATE" , "SANTA TECLA"  ,
+                       "SAN SALVADOR" , "LA UNION", "NUEVA ESPERANZA", "SAN MIGUEL",
+                       "ZACATECOLUCA","COJUTEPEQUE", "SAN FRANCISCO GOTERA", 
+                       "SENSUNTEPEQUE", "SAN VICENTE", "SAN JOSE CONCASQUE",  
+                       "USULUTAN")
+guatemala_missings <- c("SIPACATE", "SAN JOSE LA MAQUINA", "LA BLANCA",  "PETATAN",
+                        "LAS CRUCES", "EL CHAL", "SAN JORGE")
+pending_admin <- setdiff(pending_admin, salvador_missings)
+pending_admin <- setdiff(pending_admin, guatemala_missings)
+
+print(paste0('[INFO] Unmatched municipalities from homicide data: ', length(pending_hom)))
+print(paste0('[INFO] Unmatched municipalities from admin data: ', length(pending_admin)))
