@@ -4,7 +4,9 @@ library(reshape)
 library(pdftools)
 
 # 1. Load data ----------------------------------
-data <- pdftools::pdf_text('Data/Homicides/Raw/Nicaragua/Anuario-PN-2020-marzo.pdf')
+gdrive_fpath <- "/Volumes/GoogleDrive/My Drive/Stanford/ESS 268/Project"
+data_fpath <- file.path(gdrive_fpath, "Data/Raw/Homicides/Nicaragua/Anuario-PN-2020-marzo.pdf")
+data <- pdftools::pdf_text(data_fpath)
 
 # 2. Process ------------------------------------
 homicides <- strsplit(data, split='Homicidios por cada 100 mil habitantes por departamentos')[[35]][2]

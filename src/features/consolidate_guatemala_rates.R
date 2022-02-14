@@ -10,7 +10,7 @@ gdrive_fpath <- file.path("/Volumes/GoogleDrive-112161833434429421879/My Drive/P
 raw_data_fpath <- file.path(gdrive_fpath, 'Data', 'Raw')
 processed_data_fpath <- file.path(gdrive_fpath, 'Data', 'Processed')
 output_path <- file.path(processed_data_fpath, 'guatemala_homicide_rates.csv')
-pop_projection_type <- c('old', 'new')
+pop_projection_type <- c('old')
 
 # 1. Load and prep homicide data ---------------------------------
 # * 1.1 Guatemala Municipality-Annual Homicide Counts (2001-2019)

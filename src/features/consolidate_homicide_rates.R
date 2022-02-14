@@ -19,6 +19,7 @@ nicaragua_rates <- read_csv(
 nicaragua_rates <- nicaragua_rates %>% 
   filter(Year %in% temporal_period) %>% 
   mutate(Municipio=NA) %>%
+  mutate(Population=NA) %>%
   mutate(Departamento=Departamentos) %>% select(-Departamentos) %>%
   mutate(
     Country='Nicaragua', 
@@ -43,10 +44,10 @@ elsalvador_rates <- elsalvador_rates %>% mutate(Country ='El Salvador')
 honduras_rates <- honduras_rates %>% mutate(Country ='Honduras')
 
 homicide_rates <- rbind(
-  select(nicaragua_rates, c(code, Country, Departamento, Municipio, Year, hom_rate_100k)),
-  select(guatemala_rates, c(code, Country, Departamento, Municipio, Year, hom_rate_100k)),
-  select(honduras_rates, c(code, Country, Departamento, Municipio, Year, hom_rate_100k)),
-  select(elsalvador_rates, c(code, Country, Departamento, Municipio, Year, hom_rate_100k)))
+  select(nicaragua_rates, c(code, Country, Departamento, Municipio, Year, hom_rate_100k, Population)),
+  select(guatemala_rates, c(code, Country, Departamento, Municipio, Year, hom_rate_100k, Population)),
+  select(honduras_rates, c(code, Country, Departamento, Municipio, Year, hom_rate_100k, Population)),
+  select(elsalvador_rates, c(code, Country, Departamento, Municipio, Year, hom_rate_100k, Population)))
 
 # 5. Save ------------------------------------
 write.csv(homicide_rates, output_path, row.names = FALSE)

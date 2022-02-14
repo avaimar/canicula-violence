@@ -78,8 +78,11 @@ m1.vhi <- feols(hom_rate_100k ~ mean_vhi |  munic_dep + Year, data = full_df)
 m2.CI <- feols(hom_rate_100k ~ as.factor(Canicula_Index) | munic_dep + Year, data = full_df)
 
 # Pick model for visualization purposes
-selected.MM <- model.matrix(m1.vhi)
-save(selected.MM, m1.vhi, file = file.path(model_data_fpath, "modelmatrix.RData"))
+selected.MM.rhs <- model.matrix(m1.vhi, type='rhs')
+selected.MM.lhs <- model.matrix(m1.vhi, type='lhs')
+selected.MM.fixef <- model.matrix(m1.vhi, type='fixef')
+save(full_df, selected.MM.rhs, selected.MM.lhs, selected.MM.fixef, m1.vhi, 
+     file = file.path(model_data_fpath, "modelmatrix.RData"))
 
 #no significant effects using department or country FE or country*year department*year FE
 feols(hom_rate_100k ~ mean_vhi |  Departamento + Year, data = full_df)
