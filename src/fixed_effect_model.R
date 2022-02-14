@@ -12,6 +12,7 @@ gdrive_fpath <- file.path(##change this to point at google drive path
   "/Volumes/GoogleDrive-112161833434429421879/My Drive/Project")
 raw_data_fpath <- file.path(gdrive_fpath, "Data", "Raw")
 processed_data_fpath <- file.path(gdrive_fpath, "Data", "Processed")
+model_data_fpath <- file.path(gdrive_fpath, "Models")
 #repo data paths
 #figure_fpath <- file.path(gdrive_fpath, "Figures")
 figure_fpath <- file.path("results", "figures")
@@ -25,9 +26,6 @@ vhi_df <- read.csv(
 vhi_df$Canicula_Label <- factor(vhi_df$Canicula_Label,
   levels = c("Extreme", "Severe", "Moderate", "Mild", "None"))
 hom_df <- read.csv(file.path(processed_data_fpath, "homicide_rates.csv"))
-#remove dupes in homicide df
-#TODO: look into why we have these dupes in the first place
-hom_df <- hom_df[!duplicated(hom_df), ]
 
 #3. Join Canicula Data, Homicide Data, and Shapefiles -----
 canicula_sf <- left_join(
@@ -76,17 +74,22 @@ full_df <- full_df %>% filter(Year >= 2013) #period with data for >=3 countries
 #full_df <-full_df %>% filter(shapeGroup != "NIC") # subset to countries with munic-level data 
 
 #run FE model with municipality FE (significant effects)
-feols(hom_rate_100k ~ mean_vhi |  munic_dep + Year, data = full_df)
-feols(hom_rate_100k ~ Canicula_Index | munic_dep + Year, data = full_df)
+m1.vhi <- feols(hom_rate_100k ~ mean_vhi |  munic_dep + Year, data = full_df)
+m2.CI <- feols(hom_rate_100k ~ as.factor(Canicula_Index) | munic_dep + Year, data = full_df)
+
+# Pick model for visualization purposes
+selected.MM <- model.matrix(m1.vhi)
+save(selected.MM, m1.vhi, file = file.path(model_data_fpath, "modelmatrix.RData"))
+
 #no significant effects using department or country FE or country*year department*year FE
 feols(hom_rate_100k ~ mean_vhi |  Departamento + Year, data = full_df)
-feols(hom_rate_100k ~ Canicula_Index |  Departamento + Year, data = full_df)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) |  Departamento + Year, data = full_df)
 feols(hom_rate_100k ~ mean_vhi | shapeGroup + Year, data = full_df)
-feols(hom_rate_100k ~ Canicula_Index |  shapeGroup + Year, data = full_df)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) |  shapeGroup + Year, data = full_df)
 feols(hom_rate_100k ~ mean_vhi | shapeGroup[Year] + Year, data = full_df)
-feols(hom_rate_100k ~ Canicula_Index | shapeGroup[Year] + Year, data = full_df)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) | shapeGroup[Year] + Year, data = full_df)
 feols(hom_rate_100k ~ mean_vhi |  Departamento[Year] + Year, data = full_df)
-feols(hom_rate_100k ~ Canicula_Index |  Departamento[Year] + Year, data = full_df)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) |  Departamento[Year] + Year, data = full_df)
 
 
 #number of years of data per munic-dep
@@ -105,9 +108,9 @@ full_df <- full_df %>% filter(n_year > 5)
 
 #no major change when removing these
 feols(hom_rate_100k ~ mean_vhi | munic_dep + Year, data = full_df)
-feols(hom_rate_100k ~ Canicula_Index | munic_dep + Year, data = full_df)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) | munic_dep + Year, data = full_df)
 feols(hom_rate_100k ~ mean_vhi |  Departamento + Year, data = full_df)
-feols(hom_rate_100k ~ Canicula_Index |  Departamento + Year, data = full_df)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) |  Departamento + Year, data = full_df)
 
 ##FE with lags + leads... not sure how to interpret these
 feols(hom_rate_100k ~ l(mean_vhi, 0:2) | munic_dep + Year, data = full_df, panel.id = ~munic_dep + Year )

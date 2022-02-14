@@ -148,7 +148,7 @@ st_write(admin_bndry_sf,
   delete_dsn = T)
 
 ### Tests for same columns as homicide Df
-# hom_df <- read.csv(file.path(processed_data_fpath, 'homicide_rates.csv'))
+hom_df <- read.csv(file.path(processed_data_fpath, "homicide_rates.csv"))
 pending_hom <- setdiff(hom_df$Municipio, admin_bndry_sf$Municipio)
 pending_admin <- setdiff(admin_bndry_sf$Municipio, hom_df$Municipio)
 

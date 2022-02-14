@@ -21,6 +21,11 @@ elsalvador <- elsalvador %>%
   mutate(Municipio = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Municipio)), 
          Departamento = chartr("ÁÉÍÓÚ", "AEIOU", toupper(Departamento)))
 
+# Drop duplicate municipalities:
+# Cuscatincingo, San Marcos, Pasaquina, Meanguera del Golfo, Jiquilisco
+elsalvador <- elsalvador %>%
+  distinct(Municipio, Departamento, Year, hom_count)
+
 # * Population data
 elsalvador_pop <- read_csv(
   file.path(raw_data_fpath, 'Population', 'El_Salvador', 'population_estimates.csv'))
