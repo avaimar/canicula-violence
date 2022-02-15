@@ -35,22 +35,22 @@ munic_sf <- do.call(rbind, lapply(munic_fpaths, st_read))
 
 #3. Add Department column to municipality sdf ----
 #reproject to projection CRS for central america so we can take centroids
-dept_sf <- sf::st_transform(dept_sf, crs = proj_crs)
-munic_sf <- sf::st_transform(munic_sf, crs = proj_crs)
+dept_sf <- st_transform(dept_sf, crs = proj_crs)
+munic_sf <- st_transform(munic_sf, crs = proj_crs)
 
 #join dept sdf to munic sdf based on which
 #department the polygon munic centroid falls into
-munic_dept_join <- dept_sf  %>% 
-  select(c(shapeName, geometry)) %>%
+munic_dept_join <- dept_sf  %>%
+  dplyr::select(c(shapeName, geometry)) %>%
   st_join(st_centroid(munic_sf), suffix = c(".Departamento", ".Municipio")) %>%
-  rename(Departamento = shapeName.Departamento, 
+  rename(Departamento = shapeName.Departamento,
          Municipio = shapeName.Municipio) %>%
-  select(Departamento, Municipio, shapeID)
+  dplyr::select(Departamento, Municipio, shapeID)
 
 #add the department column to the munic sdf based on previous join
 munic_sf <- left_join(
   munic_sf, st_drop_geometry(munic_dept_join), by = "shapeID") %>%
-    select(-shapeName)
+    dplyr::select(-shapeName)
 
 #make sure these look right
 ggplot() +
@@ -64,6 +64,17 @@ dept_sf <- sf::st_transform(dept_sf, crs = latlon_crs)
 #write out munic sdf with department column
 st_write(munic_sf,
   file.path(processed_data_fpath, "munic_with_dept.geojson"),
+  delete_dsn = TRUE)
+
+#make country shapefile to be used later
+country_sf <- dept_sf %>%
+  sf::st_transform(dept_sf, crs = proj_crs) %>%
+  group_by(shapeGroup) %>%
+  summarize(geometry = st_union(geometry)) %>%
+  sf::st_transform(dept_sf, crs = latlon_crs)
+
+st_write(country_sf,
+  file.path(processed_data_fpath, "country_outlines.geojson"),
   delete_dsn = TRUE)
 
 #4. Create shapefile at desired administrative levels for homicide join ----
