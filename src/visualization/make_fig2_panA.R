@@ -79,7 +79,8 @@ g1 <- ggplot() +
   scale_color_manual(values=vals, name='') +
   geom_ribbon(data=filter(finaldc, Year <=2017), 
               aes(x=Year, ymin=Counterfactual/1000,ymax=Actual/1000), fill="indianred1", alpha=0.5)+
-  labs(y='')
+  labs(y='') + 
+  theme(axis.text = element_text(face="bold"))
   #annotate("rect", xmin = 2013.9, xmax = 2014.1, 
   #         ymin = min(final$homicides), 
   #         ymax = max(final$homicides) * 1.05,
