@@ -44,7 +44,7 @@ predict_homicides <- function(model, munic_dep, Year, vhi) {
 cf_df <- cf_df %>% rowwise() %>%
   mutate(predicted_hom = predict_homicides(m1.vhi, munic_dep, Year, base_vhi))
 
-# Remove negative rates
+# Clip negative rates
 cf_df <- mutate(cf_df, predicted_hom = ifelse(predicted_hom < 0, 0, predicted_hom))
 
 # Set chosen CF year to actual values
@@ -52,10 +52,9 @@ cf_df <- cf_df %>%
   mutate(
     predicted_hom = case_when(
     Year == CF_YEAR ~ hom_rate_100k,
-    TRUE ~ predicted_hom)
-  )
+    TRUE ~ predicted_hom))
 
-# Compute annual counterfactual
+# Compute annual counterfactual (aggregate)
 cf_df <- mutate(cf_df, homicides_cf=predicted_hom* Population / 100000)
 annual_hom_cf <- cf_df %>% 
   group_by(Year) %>% 
@@ -66,8 +65,11 @@ annual_hom_cf <- annual_hom_cf %>%
   mutate(homicides=homicides_cf) %>%
   dplyr::select(Year, homicides, Scenario)
 
-# Compute confidence interval
+# Compute confidence interval and rate densities
+set.seed(42)
 cf_hom <- matrix(nrow=100, ncol=8) # Save each year
+cf_rate_densities <- cf_df %>% dplyr::select(munic_dep, Year, hom_rate_100k, base_vhi)
+
 ll = dim(full_df)[1]
 for (i in 1:100)  {
   if (i %% 10 == 0) print(i)
@@ -95,11 +97,17 @@ for (i in 1:100)  {
     group_by(Year) %>% 
     dplyr::summarize(homicides_cf=sum(homicides_cf, na.rm=T))
   
+  # Append predicted rate change to densities data.frame
+  bs_df <- bs_df %>% mutate(predicted_rate_change = predicted_hom - hom_rate_100k)
+  cf_rate_densities <- cbind(
+    cf_rate_densities,
+    dplyr::select(bs_df, predicted_rate_change))
+  
   # Save 
   cf_hom[i,] <- pull(annual_hom_bs,  homicides_cf)
-  
 }
 
+# Time series -----------------------
 # Extract 95% CI
 confint <- apply(cf_hom, 2,function(x) quantile(x,probs=c(0.05, 0.95))) 
 confint <- t(confint)
@@ -136,3 +144,39 @@ ggsave(file.path(figure_fpath, 'fig2_panA.png'), g1, scale=0.8, width = 5, heigh
 ggplot(data=cf_df, aes(x=mean_vhi, group=Year))+ 
   geom_histogram(aes(group=Year)) + 
   facet_grid(Year~.)
+
+# Rate densities -----------------------
+colnames(cf_rate_densities) <- c(
+  'munic_dep', 'Year', 'hom_rate_100k', 'base_vhi', 
+  1:(dim(cf_rate_densities)[2] -4))
+
+cf_rate_densities <- cf_rate_densities %>% 
+  dplyr::select(-c(munic_dep, Year, hom_rate_100k, base_vhi))
+#  rowwise() %>%
+#  mutate(rate_chg_5 = function(x) quantile(x, probs=c(0.05)), 
+#         rate_chg_95 = function(x) quantile(x, probs=c(0.95)))
+
+cf_rate_densities <- as.matrix(cf_rate_densities)
+cf_rate_densities <- apply(cf_rate_densities, 1,function(x) quantile(x,probs=c(0.05, 0.95), na.rm=T)) 
+
+cf_rate_densities <- cbind(
+  dplyr::select(cf_df, munic_dep, Year, Population, mean_vhi, hom_rate_100k, predicted_hom), 
+  t(cf_rate_densities)
+)
+
+cf_rate_densities <- cf_rate_densities %>% 
+  mutate(rate_chg_5_point = predicted_hom - hom_rate_100k)
+
+# Plot
+#Note: we remove 2017 and extreme outliers
+ggplot(data=filter(cf_rate_densities, Year != 2017 & `5%` > -200 & `95%` < 200), aes(group=Year))+ 
+  geom_density(aes(x=rate_chg_5_point, group=Year)) + 
+  geom_density(aes(x=`5%`, group=Year), fill="#6699cc", alpha=.5, color = NA) + 
+  geom_density(aes(x=`95%`, group=Year), fill="#6699cc", alpha=.5, color = NA) + 
+  facet_grid(Year~.) + 
+  theme_classic() +
+  labs(y='', x='Predicted homicide rate change') + 
+  theme(axis.text.y = element_blank(), axis.ticks.y=element_blank(),
+        axis.line.y = element_blank())
+ggsave(file.path(figure_fpath, 'fig2_panA_densities.png'), g1, scale=0.8, width = 5, height = 5)
+
