@@ -169,7 +169,7 @@ cf_rate_densities <- cf_rate_densities %>%
 
 # Plot
 #Note: we remove 2017 and extreme outliers
-ggplot(data=filter(cf_rate_densities, Year != 2017 & `5%` > -200 & `95%` < 200), aes(group=Year))+ 
+ggplot(data=filter(cf_rate_densities, Year != 2017 & `5%` > -75 & `95%` < 75), aes(group=Year))+ 
   geom_density(aes(x=rate_chg_5_point, group=Year)) + 
   geom_density(aes(x=`5%`, group=Year), fill="#6699cc", alpha=.5, color = NA) + 
   geom_density(aes(x=`95%`, group=Year), fill="#6699cc", alpha=.5, color = NA) + 
@@ -178,5 +178,6 @@ ggplot(data=filter(cf_rate_densities, Year != 2017 & `5%` > -200 & `95%` < 200),
   labs(y='', x='Predicted homicide rate change') + 
   theme(axis.text.y = element_blank(), axis.ticks.y=element_blank(),
         axis.line.y = element_blank())
+  #geom_vline(xintercept=0)
 ggsave(file.path(figure_fpath, 'fig2_panA_densities.png'), g1, scale=0.8, width = 5, height = 5)
 
