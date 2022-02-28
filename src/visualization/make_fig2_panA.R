@@ -6,8 +6,7 @@ library(fixest)
 library(dplyr)
 library(reshape2)
 
-gdrive_fpath <- file.path( ##change this to point at google drive path
-  "/Volumes/GoogleDrive-112161833434429421879/My Drive/Project")
+load('CONFIG.Rspace')
 model_data_fpath <- file.path(gdrive_fpath, "Models")
 figure_fpath <- file.path(gdrive_fpath,  "Figures")
 #figure_fpath_local <- file.path("results", "figures")

@@ -8,8 +8,7 @@ library(fixest)
 
 #1. Set paths and parameters -----
 #gdrive data paths
-gdrive_fpath <- file.path(##change this to point at google drive path
-  "/Volumes/GoogleDrive-112161833434429421879/My Drive/Project")
+load('CONFIG.Rspace')
 raw_data_fpath <- file.path(gdrive_fpath, "Data", "Raw")
 processed_data_fpath <- file.path(gdrive_fpath, "Data", "Processed")
 model_data_fpath <- file.path(gdrive_fpath, "Models")
