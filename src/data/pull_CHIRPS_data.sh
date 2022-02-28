@@ -12,7 +12,7 @@ fi
 
 cd data_raw_local/CHIRPS
 
-for YEAR in {2010..2020}
+for YEAR in {2013..2020}
 do 
   for PENTAD in {1..72}
   do
