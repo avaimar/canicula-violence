@@ -25,5 +25,6 @@ cache
 *.Rproj*
 .RData
 .Rhistory
-
+.history/
+rosm.cache/
 
