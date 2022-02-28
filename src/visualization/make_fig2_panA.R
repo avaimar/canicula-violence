@@ -6,11 +6,15 @@ library(fixest)
 library(dplyr)
 library(reshape2)
 
-gdrive_fpath <- "/Volumes/GoogleDrive/My Drive/Stanford/ESS 268/Project"
+gdrive_fpath <- file.path( ##change this to point at google drive path
+  "/Volumes/GoogleDrive-112161833434429421879/My Drive/Project")
 model_data_fpath <- file.path(gdrive_fpath, "Models")
 figure_fpath <- file.path(gdrive_fpath,  "Figures")
+#figure_fpath_local <- file.path("results", "figures")
 
-load(file.path(model_data_fpath, "modelmatrix.RData"))
+load(file.path(model_data_fpath, "modelmatrix_dry.RData"))
+load(file.path(figure_fpath, "Fig2_rspace.RData"))
+
 
 # 1. Plot -------------------------------------
 
@@ -121,25 +125,25 @@ confint <- confint %>%  select(Year, homicides, Scenario)
 final <- rbind(annual_hom, annual_hom_cf, confint)
 finaldc <- reshape2::dcast(final, formula=Year ~ Scenario, value.var='homicides')
 
-vals <- c("Actual" = "grey47", "Counterfactual" = "lightcoral")
+vals <- c("Actual" = "grey47", "Counterfactual" = "#6699cc")
 g1 <- ggplot() +
   geom_line(data=filter(final, Scenario %in% c('Actual', 'Counterfactual')), 
             aes(x=Year, y=homicides/1000, group=Scenario, colour=Scenario)) +
   theme_classic() + 
-  theme(legend.position='none') + 
+  # theme(legend.position='none') + 
   scale_color_manual(values=vals, name='') +
   #geom_ribbon(data=filter(finaldc, Year <=2017), 
   #            aes(x=Year, ymin=Counterfactual/1000,ymax=Actual/1000), fill="indianred1", alpha=0.5)+
-  labs(y='') + 
-  theme(axis.text = element_text(face="bold")) + 
+  labs(y='Total Homicides') + 
+  theme_classic() + 
   geom_ribbon(data=finaldc,
-              aes(x=Year, ymin = `5%`/1000, ymax = `95%`/1000), alpha = 0.1)
+              aes(x=Year, ymin = `5%`/1000, ymax = `95%`/1000), alpha = 0.1, fill = vals[2]) + 
+  scale_x_continuous(breaks = seq(2013, 2020))
   #annotate("rect", xmin = 2013.9, xmax = 2014.1, 
   #         ymin = min(final$homicides), 
   #         ymax = max(final$homicides) * 1.05,
   #         alpha = .1,fill = "blue")
-
-ggsave(file.path(figure_fpath, 'fig2_panA.png'), g1, scale=0.8, width = 5, height = 5)
+ggsave(file.path(figure_fpath, 'fig2_panA.pdf'), g1, scale=0.8, width = 6, height = 4)
 
 ggplot(data=cf_df, aes(x=mean_vhi, group=Year))+ 
   geom_histogram(aes(group=Year)) + 
@@ -167,17 +171,26 @@ cf_rate_densities <- cbind(
 cf_rate_densities <- cf_rate_densities %>% 
   mutate(rate_chg_5_point = predicted_hom - hom_rate_100k)
 
+
+getPalette = colorRampPalette(brewer.pal(9, name = "RdBu"))
+rdbu200 <- getPalette(200)
+min(cf_rate_densities$rate_chg_5_point, na.rm =T )
+cf_rate_densities <- cf_rate_densities %>%
+  filter(`5%` > -75 & `95%` < 75) %>%
+  group_by(Year) %>%
+  mutate(pt_est = mean(rate_chg_5_point, an))
+    c = rdbu200[int(pt_est+100)])
+
 # Plot
 #Note: we remove 2017 and extreme outliers
-ggplot(data=filter(cf_rate_densities, Year != 2017 & `5%` > -75 & `95%` < 75), aes(group=Year))+ 
+g2 <- ggplot(data=filter(cf_rate_densities, Year != 2017 & `5%` > -75 & `95%` < 70), aes(group=Year))+ 
   geom_density(aes(x=rate_chg_5_point, group=Year)) + 
   geom_density(aes(x=`5%`, group=Year), fill="#6699cc", alpha=.5, color = NA) + 
   geom_density(aes(x=`95%`, group=Year), fill="#6699cc", alpha=.5, color = NA) + 
   facet_grid(Year~.) + 
   theme_classic() +
-  labs(y='', x='Predicted homicide rate change') + 
+  labs(y='', x='Predicted Homicide Rate Change') + 
   theme(axis.text.y = element_blank(), axis.ticks.y=element_blank(),
-        axis.line.y = element_blank())
-  #geom_vline(xintercept=0)
-ggsave(file.path(figure_fpath, 'fig2_panA_densities.png'), g1, scale=0.8, width = 5, height = 5)
-
+        axis.line.y = element_blank()) +
+  geom_vline(xintercept=0, color = 'white')
+ggsave(file.path(figure_fpath, 'fig2_panA_densities.pdf'), g2, scale=0.8, width = 4, height = 8)
