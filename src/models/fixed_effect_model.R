@@ -5,6 +5,7 @@ library(exactextractr)
 library(tidyverse)
 library(RColorBrewer)
 library(fixest)
+library(units)
 
 #1. Set paths and parameters -----
 #gdrive data paths
@@ -16,9 +17,13 @@ model_data_fpath <- file.path(gdrive_fpath, "Models")
 #figure_fpath <- file.path(gdrive_fpath, "Figures")
 figure_fpath <- file.path("results", "figures")
 
+# CRS
+proj_crs <- 26716
+latlon_crs <- 4326
+
 #2. Read in Data -----
 admin_bndry_sf <- st_read(
-  file.path(processed_data_fpath, "cleaned_admin_boundaries.geojson"))
+  file.path(processed_data_fpath, "admin_bndry_cropland.geojson"))
 vhi_df <- read.csv(
   file.path(processed_data_fpath, "Canicula_index_2010_2020.csv"))
 #convert canicula index to ordered factor
@@ -37,6 +42,22 @@ full_sf <- left_join(
   hom_df,
   by = c("Departamento", "Municipio", "Year"))
 
+# Add areas to compute population densities
+full_sf <- full_sf %>%
+  sf::st_transform(full_sf, crs = proj_crs) %>%
+  mutate(area = st_area(geometry))  %>%
+  mutate(area = set_units(area, km^2))
+
+# Compute population density
+full_sf <- full_sf %>%
+  mutate(pop_density = Population / area, 
+         urban = ifelse(pop_density > set_units(300, 1/km^2), 1, 0))
+
+# Keep density from 2013 for heterogeneous effects
+full_sf <- full_sf %>%
+  group_by(Departamento, Municipio) %>%
+  arrange(Year) %>%
+  mutate(urban_2013 = dplyr::first(urban))
 
 #4. Prepare data for FE Model -----
 #transform variables
@@ -57,6 +78,9 @@ nonunique_munic_dept <- full_df[duplicated(full_df[, c("munic_dep", "Year")]),] 
   unique() %>%
   unlist()
 full_df <- full_df %>% filter(!(munic_dep %in% nonunique_munic_dept))
+
+# Subset to Dry Corridor
+full_df <- filter(full_df, in_dry_corridor==TRUE)
 
 #5. Run FE Model -----
 
@@ -119,3 +143,123 @@ feols(hom_rate_100k ~ l(mean_vhi, 0:2) | munic_dep + Year, data = full_df, panel
 feols(hom_rate_100k ~ l(Canicula_Index, 0:2) | munic_dep + Year, data = full_df, panel.id = ~munic_dep + Year )
 feols(hom_rate_100k ~ f(mean_vhi, 0:2)|  munic_dep + Year, data = full_df, panel.id = ~munic_dep + Year )
 feols(hom_rate_100k ~ f(Canicula_Index, 0:2)| munic_dep + Year, data = full_df, panel.id = ~munic_dep + Year )
+
+# Functional form
+m.quad <- feols(hom_rate_100k ~ poly(mean_vhi,2) |  munic_dep + Year, data = full_df, subset=!is.na(full_df$mean_vhi))
+m.log <- feols(hom_rate_100k ~ log(mean_vhi) |  munic_dep + Year, data = full_df)
+
+# 6. Heterogeneous effects -------------------------------------
+# * Population density
+mod.pop_density <- feols(hom_rate_100k ~ mean_vhi*urban_2013 |  munic_dep + Year, data = full_df)
+mod.urban <- feols(hom_rate_100k ~ mean_vhi |  munic_dep + Year, data = full_df, subset=full_df$urban==1)
+mod.rural <- feols(hom_rate_100k ~ mean_vhi |  munic_dep + Year, data = full_df, subset=full_df$urban==0)
+
+mod.pop_density.ag <- feols(hom_rate_100k ~ mean_vhi + mean_vhi : urban_2013: cropland |  munic_dep + Year, data = full_df)
+
+# * Cropland 
+mod.crop <- feols(hom_rate_100k ~ mean_vhi*cropland |  munic_dep + Year, data = full_df)
+mod.grass <- feols(hom_rate_100k ~ mean_vhi*grassland |  munic_dep + Year, data = full_df)
+
+# * Cropland vs Pop Density
+mod.crop.urban <- feols(hom_rate_100k ~ mean_vhi*cropland |  munic_dep + Year, data = full_df, subset=full_df$urban==1)
+mod.crop.rural <- feols(hom_rate_100k ~ mean_vhi*cropland |  munic_dep + Year, data = full_df, subset=full_df$urban==0)
+
+# * Country
+mod.GTM <- feols(hom_rate_100k ~ mean_vhi |  Departamento + Year, data = full_df, subset=full_df$Country=='Guatemala')
+mod.ELS <- feols(hom_rate_100k ~ mean_vhi |  Departamento + Year, data = full_df, subset=full_df$Country=='El Salvador')
+mod.HOND <- feols(hom_rate_100k ~ mean_vhi |  Departamento + Year, data = full_df, subset=full_df$Country=='Honduras')
+mod.NIC <- feols(hom_rate_100k ~ mean_vhi |  Departamento + Year, data = full_df, subset=full_df$Country=='Nicaragua')
+
+# 7. Create Figure 2 Plots ------------------------------------
+# Helper functions to bootstrap and visualize models
+bootstrap_model <- function(formula_eq, data, K, x_center) {
+  x <- 0:100
+  
+  boots <- matrix(nrow=K,ncol=length(x))
+  ll = dim(data)[1]
+  for (k in 1:K) {
+    if (k %% 10 == 0) print(i)
+    
+    # Fit model on bootstrapped dataset
+    samp <- sample(1:ll, size=ll,replace=T)
+    newdata = data[samp,]
+    mod <- feols(formula(formula_eq), data = newdata)
+    
+    # Predict and save
+    y <- x*coef(mod)
+    y <- y - y[x=x_center]
+    boots[k,] <- y
+  }
+  
+  confint <- apply(boots,2,function(x) quantile(x,probs=c(0.05,0.5,0.95)))
+  confint
+}
+
+plot_model <- function(confint, xlab, ylab, new_plot, color, l_histogram, ylim) {
+  x=0:100
+  
+  if (new_plot == TRUE){
+    x_llim <- ifelse(l_histogram==TRUE, -15, 0)
+    plot(1,xlim=c(x_llim,100),ylim=ylim,las=1,xlab=xlab,ylab=ylab, type='n', cex.axis=1.2, axes=FALSE)
+    axis(1)
+    axis(2, col = "black", col.ticks = "black")
+  }
+  polygon(c(x,rev(x)),c(confint[1,],rev(confint[3,])),col=color,border = NA)
+  lines(x,confint[2,])
+}
+
+visualize_model <- function(formula_eq, data, K, l_histogram, b_histogram, x_center, new_plot, color, ylim) {
+  CI <- bootstrap_model(formula_eq, data, K, x_center)
+  
+  plot_model(CI, xlab='VHI', ylab='Homicide Rate', new_plot, color, l_histogram, ylim)
+  
+  if (b_histogram==TRUE){
+    bins = seq(0,100,1)
+    hist.VHI = data$mean_vhi
+    
+    # Histogram params
+    dis = 0.055
+    base = -50
+    
+    # Make histograms
+    zz <- hist(hist.VHI,plot=F,breaks=bins)
+    cts = zz$counts/max(zz$counts)*15
+    rect(bins, base, bins+0.5, base+cts, col="red")
+  }
+  
+  if(l_histogram==TRUE){
+    bins = seq(0, 700, 2)
+    hist.hom = data$hom_rate_100k
+    
+    # Histogram params
+    dis = 0.055
+    base= -15
+    
+    # Make histograms
+    yy <- hist(hist.hom, plot=F,breaks=bins)
+    cts = yy$counts/max(yy$counts)*15
+    rect(xleft=base,ybottom=bins-0.1, xright=base+cts,ytop=bins,col="red")
+  }
+}
+
+X_CENTER <- 42
+
+visualize_model(
+  formula_eq='hom_rate_100k ~ mean_vhi |  munic_dep + Year', 
+  data=full_df, K=100, l_histogram=F, b_histogram=T, x_center=X_CENTER, new_plot=TRUE, 
+  color='azure2', ylim=c(-50, 50))
+
+visualize_model(
+  formula_eq='hom_rate_100k ~ mean_vhi |  munic_dep + Year', 
+  data=full_df[full_df$urban==1,], K=100, l_histogram=F, b_histogram=F, x_center=X_CENTER, 
+  new_plot=TRUE, color='indianred3', ylim=c(-80, 70))
+
+visualize_model(
+  formula_eq='hom_rate_100k ~ mean_vhi |  munic_dep + Year', 
+  data=full_df[full_df$urban==0,], K=100, l_histogram=F, b_histogram=F, x_center=X_CENTER,
+  new_plot=FALSE, color='azure2', ylim=c(-80, 70))
+
+
+# References:
+# Urbanization: https://blogs.worldbank.org/sustainablecities/how-do-we-define-cities-towns-and-rural-areas
+# Burke, Hsiang, Miguel (2015)
