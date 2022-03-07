@@ -9,8 +9,7 @@ raw_data_fpath <- file.path(gdrive_fpath, "Data", "Raw")
 processed_data_fpath <- file.path(gdrive_fpath, "Data", "Processed")
 #repo data paths
 data_raw_VHI_fpath <- file.path("data_raw_local", "VHI" )
-figure_fpath <- file.path("results", "figures" )
-year_range <- c(2011:2020)
+year_range <- c(1982:2020)
 week_range <- c(27:35)
 
 
@@ -19,9 +18,11 @@ admin_bndry_sf <- st_read(
   file.path(processed_data_fpath, "cleaned_admin_boundaries.geojson"))
 
 #3.  Preprocess VHI Raster Data -----
-#read in vhi data during year/week_range and crop to 4 countries of interest
+#r ead in vhi data during year/week_range and crop to 4 countries of interest
+# NOTE: No file exists for 'VHP.G04.C07.NL.P2004029.VH.VHI.tif' so just copied 
+# 'VHP.G04.C07.NL.P2004030.VH.VHI.tif' and renamed 
 vhi <- stack(
-  list.files(data_raw_VHI_fpath, pattern = "*[^6].VH.VHI.tif$", full.names = T)) %>% 
+  list.files(data_raw_VHI_fpath, pattern = "*.VH.VHI.tif$", full.names = T)) %>% 
   crop(extent(admin_bndry_sf))
 vhi  <- reclassify(vhi, cbind(-9999, NA)) #map -9999 to NULL
 
@@ -75,4 +76,4 @@ admin_bndry_vhi_sf <- admin_bndry_vhi_sf %>%
 #6. Write out CSV ----
 write.csv(
   st_drop_geometry(select(admin_bndry_vhi_sf, -c(in_dry_corridor))), 
-  file.path(processed_data_fpath, "Canicula_index_2010_2020.csv"))
+  file.path(processed_data_fpath, "Canicula_index_1982_2020.csv"))

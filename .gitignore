@@ -14,6 +14,9 @@ env/
 #Exploratory folder that should never be seen by other humans
 exploratory/
 
+#general project notes
+notes/
+
 #Local data folder contents and results folder contents
 data_raw_local/*
 results/tables/*
