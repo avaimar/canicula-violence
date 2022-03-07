@@ -19,6 +19,9 @@ data_raw_local/*
 results/tables/*
 results/figures/*
 
+#local config file
+CONFIG.Rspace
+
 #.idea and R poops
 .idea/
 cache
@@ -27,4 +30,5 @@ cache
 .Rhistory
 .history/
 rosm.cache/
+.RDataTmp
 
