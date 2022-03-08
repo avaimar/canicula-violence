@@ -1,5 +1,6 @@
 # 0. Working set up ---------------------------
 library(basemaps)
+library(ggmap)
 library(sf)
 library(ggplot2)
 library(ggspatial)
@@ -9,8 +10,8 @@ library(scales)
 load("CONFIG.Rspace")
 raw_data_fpath <- file.path(gdrive_fpath, "Data", "Raw")
 processed_data_fpath <- file.path(gdrive_fpath, "Data", "Processed")
-# figure_fpath <- file.path(gdrive_fpath,  "Figures")
-figure_fpath_local <- file.path("results", "figures")
+figure_fpath <- file.path(gdrive_fpath,  "Figures")
+#figure_fpath_local <- file.path("results", "figures")
 
 # 2. Read in shapefiles-----
 
@@ -20,11 +21,14 @@ dry_corridor <- sf::st_read(
 )
 
 # 3. Plot Dry Corridor -----
+bbox <- st_bbox(dry_corridor)
+names(bbox) <- c('left', 'bottom', 'right', 'top')
 
-p <- ggplot(dry_corridor) +
-  annotation_map_tile(zoom = 7, type = "hotstyle") +
-  geom_sf(fill = muted("blue"), color = NA, alpha = .5) +
+options <- c('toner-hybrid', 'terrain-lines')
+
+map <- ggmap::get_stamenmap(bbox=bbox, maptype='toner-lite', crop=FALSE, zoom=7)
+ggmap(map)+ 
+  geom_sf(data=dry_corridor, fill = muted("blue"), color = NA, alpha = .5,  inherit.aes = FALSE) +
   coord_sf(datum = NA) +
   theme_void()
-
 ggsave(file.path(figure_fpath_local, "dry_corridor.pdf"))
