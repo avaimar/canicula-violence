@@ -8,7 +8,7 @@ library(scales)
 #1. Set paths and parameters -----
 load("CONFIG.Rspace") # gdrive data paths
 processed_data_fpath <- file.path(gdrive_fpath, "Data", "Processed")
-#figure_fpath <- file.path(gdrive_fpath, "Figures")
+figure_fpath <- file.path(gdrive_fpath, "Figures")
 figure_fpath <- file.path("results", "figures" )
 source(file.path('src', 'models', 'panel_preprocessing_funcs.R'))
 
@@ -52,57 +52,54 @@ ggplot() +
     limits = c(-50, 50),
     na.value = "grey60"
   ) +
-  # scale_fill_gradient2(
-  #   low = brewer.pal(8, name = "BuPu")[8], mid = 'white', high = brewer.pal(8, name = "Greens")[8],
-  #   limits = c(-50, 50),
-  #   na.value = "grey60"
-  # ) +
   geom_sf(data = country_sf, fill = NA, lwd = 0.1, color = "gray20") +
-  # scale_fill_viridis_c(option = "magma", na.value = "grey40", begin = 1, end = .5) +
   guides(fill = guide_colorbar(
     title = "VHI Diff",
     label.theme = element_text(colour = "gray20", angle = 0, size = 8),
     title.theme = element_text(colour = "gray20", angle = 0, size = 10)
   )) +
   theme_void()
-ggsave(file.path(figure_fpath, paste0("VHI_Baseline_Diff_", y, ".pdf")))
+ggsave(file.path(figure_fpath, paste0("fig1_vhi_baseline_diff_", y, ".pdf")))
+
+max(subset(full_sf, Year == y & in_dry_corridor == T)$vhi_diff, na.rm=T)
 
 
 ##TODO: change this to be from homicide baseline
 homicide_avgs <- full_sf %>% 
-  group_by(Departamento, Municipio) %>% 
+  group_by(munic_dep) %>% 
   summarize(hom_avg = mean(hom_rate_100k)) %>% 
   as.data.frame() %>%
-  select(-geometry)
+  dplyr::select(-geometry)
 
-full_sf <- left_join(full_sf, homicide_avgs, by = c('Departamento', 'Municipio'))
+full_sf <- left_join(full_sf, homicide_avgs, by = c('munic_dep'))
 full_sf <- full_sf %>% 
   mutate(hom_diff = hom_rate_100k - hom_avg)
 
 # Homicide rate map
 min_hom_rate <- -100
 max_hom_rate <- 100
-hom_rate_ceil <- 100
+
+
+rdbu_pal <- brewer.pal(name = "RdBu", n = 11)
 
 ggplot() +
   geom_sf(data = country_sf, fill = "gray90", lwd = 0.1, color = "gray20") +
   geom_sf(
     data = subset(full_sf, Year == y & in_dry_corridor == T),
-    aes(fill = pmin(hom_diff, hom_rate_ceil)), lwd = 0.02, color = "gray60"
+    aes(fill = pmin(hom_diff, max_hom_rate)), lwd = 0.02, color = "gray60"
   ) +
   geom_sf(data = country_sf, fill = NA, lwd = 0.1, color = "gray20") +
   scale_fill_gradient2(
-    high = muted("red"), low = muted('blue'), mid = "white",
+    high = muted("red"), low = muted("blue"), mid = 'white',
     midpoint = 0, na.value = "grey60", limits = c(min_hom_rate,max_hom_rate)) +
   # scale_fill_viridis_c(option = "magma", na.value = "grey40", begin = 1, end = .5) +
   guides(fill = guide_colorbar(
-    title = "Homicide Rate (per 100,000)",
+    title = "Homicide Rate (per 100K)",
     label.theme = element_text(colour = "gray20", angle = 0, size = 8),
     title.theme = element_text(colour = "gray20", angle = 0, size = 10)
   )) +
   theme_void()
-ggsave(file.path(figure_fpath, paste("Homicide_Rate_Ceil_Dry_", y, ".pdf", sep = "")))
-
+ggsave(file.path(figure_fpath, paste0("fig1_homrate_baseline_diff", y, ".pdf")))
 
 
 # # Canicula Index Map with Labels
