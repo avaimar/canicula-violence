@@ -31,4 +31,4 @@ ggmap(map)+
   geom_sf(data=dry_corridor, fill = muted("blue"), color = NA, alpha = .5,  inherit.aes = FALSE) +
   coord_sf(datum = NA) +
   theme_void()
-ggsave(file.path(figure_fpath_local, "dry_corridor.pdf"))
+ggsave(file.path(figure_fpath, "dry_corridor.pdf"))

@@ -3,6 +3,7 @@ library(sf)
 library(tidyverse)
 library(cartography)
 library(RColorBrewer)
+library(scales)
 
 #1. Set paths and parameters -----
 load("CONFIG.Rspace") # gdrive data paths
@@ -33,7 +34,7 @@ full_sf <- full_sf %>%
 y <- 2015 # choosing 2015 to display
 
 getPalette_Bu <- colorRampPalette(brewer.pal(9, name = "BuPu"))
-purp_20 <- getPalette(20)
+purp_20 <- getPalette_Bu(20)
 purp5 <- c(purp_20[1], purp_20[7], purp_20[11], purp_20[16], purp_20[20])
 
 pubugn_pal <- c(rev(brewer.pal(5, name = "BuPu")), brewer.pal(5, name = "Greens"))
@@ -68,12 +69,26 @@ ggsave(file.path(figure_fpath, paste0("VHI_Baseline_Diff_", y, ".pdf")))
 
 
 ##TODO: change this to be from homicide baseline
+homicide_avgs <- full_sf %>% 
+  group_by(Departamento, Municipio) %>% 
+  summarize(hom_avg = mean(hom_rate_100k)) %>% 
+  as.data.frame() %>%
+  select(-geometry)
+
+full_sf <- left_join(full_sf, homicide_avgs, by = c('Departamento', 'Municipio'))
+full_sf <- full_sf %>% 
+  mutate(hom_diff = hom_rate_100k - hom_avg)
+
 # Homicide rate map
+min_hom_rate <- -100
+max_hom_rate <- 100
+hom_rate_ceil <- 100
+
 ggplot() +
   geom_sf(data = country_sf, fill = "gray90", lwd = 0.1, color = "gray20") +
   geom_sf(
     data = subset(full_sf, Year == y & in_dry_corridor == T),
-    aes(fill = pmin(hom_rate_100k, hom_rate_ceil)), lwd = 0.02, color = "gray60"
+    aes(fill = pmin(hom_diff, hom_rate_ceil)), lwd = 0.02, color = "gray60"
   ) +
   geom_sf(data = country_sf, fill = NA, lwd = 0.1, color = "gray20") +
   scale_fill_gradient2(
