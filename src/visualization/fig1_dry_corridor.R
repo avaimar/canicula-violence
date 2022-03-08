@@ -25,10 +25,12 @@ bbox <- st_bbox(dry_corridor)
 names(bbox) <- c('left', 'bottom', 'right', 'top')
 
 options <- c('toner-hybrid', 'terrain-lines')
+purp_pal <- brewer.pal(name = 'Purples', n = 9)
+blue_pal <- brewer.pal(name = 'Blues', n = 9)
 
 map <- ggmap::get_stamenmap(bbox=bbox, maptype='toner-lite', crop=FALSE, zoom=7)
 ggmap(map)+ 
-  geom_sf(data=dry_corridor, fill = muted("blue"), color = NA, alpha = .5,  inherit.aes = FALSE) +
+  geom_sf(data=dry_corridor, fill = muted(blue_pal[3]), color = NA, alpha = .5,  inherit.aes = FALSE) +
   coord_sf(datum = NA) +
   theme_void()
 ggsave(file.path(figure_fpath, "dry_corridor.pdf"))

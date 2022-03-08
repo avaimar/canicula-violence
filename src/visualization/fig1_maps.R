@@ -49,8 +49,8 @@ ggplot() +
   ) +
   scale_fill_gradientn(
     colours = pubugn_pal,
-    limits = c(-50, 50),
-    na.value = "grey60"
+    limits = c(-55, 55),
+    na.value = "grey60", breaks=c(15, 0, -15, -30, -45)
   ) +
   geom_sf(data = country_sf, fill = NA, lwd = 0.1, color = "gray20") +
   guides(fill = guide_colorbar(
