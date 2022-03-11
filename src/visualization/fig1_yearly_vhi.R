@@ -47,32 +47,21 @@ vhi_week_year$year <- rep(year_range, each = length(week_range))
 head(vhi_week_year)
 
 
-getPalette <- colorRampPalette(brewer.pal(9, name = "YlGnBu"))
 pal <- carto.pal(pal1 = "turquoise.pal", n1 = 8)
 
-vhi_week_year %>%
-  filter(year > 2012) %>%
-  ggplot(
-    aes(x = week, y = 100 - vhi, group = factor(year))
-  ) +
-  geom_line(aes(color = factor(year))) +
-  scale_color_manual(values = pal) +
-  theme_minimal()
-
-getPalette <- colorRampPalette(brewer.pal(9, name = "Blues"))
-
-
 p <- vhi_week_year %>%
-  mutate(l = year %in% c(2015, 2017)) %>%
+  mutate(l = year == 2015) %>%
   filter(year > 2012) %>%
   ggplot() +
   annotate("rect",
     xmin = 26, xmax = 36, ymin = -Inf, ymax = Inf,
     fill = "gray60", alpha = .3
   ) +
-  geom_line(aes(x = week, y = vhi, group = factor(year), color = factor(year)), linetype = 3, size = .8) +
+  geom_line(aes(x = week, y = vhi, group = factor(year), color = factor(year)),linetype = 3),  size = .8) +
   scale_color_manual(values = pal, name = "Year")
-p <- p + labs(x = "Week", y = "VHI")
+  
+p <- p + labs(x = "Week", y = "VHI") + 
+  xlim(19,43)
 p + theme_bw() +
   theme(
     panel.border = element_blank(),
@@ -81,4 +70,4 @@ p + theme_bw() +
     axis.line = element_line(colour = "black")
   )
 
-ggsave(file.path(figure_fpath, "vhi_yearly.pdf"), height = 3, width = 6)
+ggsave(file.path(figure_fpath, "fig1_vhi_yearly.pdf"), height = 3, width = 5.5)

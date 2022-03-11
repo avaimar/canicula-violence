@@ -17,7 +17,7 @@ model_data_fpath <- file.path(gdrive_fpath, "Models")
 # figure_fpath <- file.path(gdrive_fpath, "Figures")
 figure_fpath <- file.path("results", "figures")
 
-source(file.path('src', 'models', 'panel_preprocessing_funcs.R'))
+source(file.path("src", "models", "panel_preprocessing_funcs.R"))
 
 # CRS
 proj_crs <- 26716
@@ -100,28 +100,6 @@ feols(hom_rate_100k ~ mean_vhi | Departamento[Year] + Year, data = full_df)
 feols(hom_rate_100k ~ as.factor(Canicula_Index) | Departamento[Year] + Year, data = full_df)
 
 
-# number of years of data per munic-dep
-full_df %>%
-  filter(!is.na(hom_rate_100k)) %>%
-  group_by(munic_dep) %>%
-  summarise(n_year = n()) %>%
-  group_by(n_year) %>%
-  summarise(n_munic = n())
-
-full_df <- full_df %>%
-  filter(!is.na(hom_rate_100k)) %>%
-  group_by(munic_dep) %>%
-  mutate(n_year = n())
-
-# most municipalities have at least 6 years of data, remove those 19 that do not
-# full_df <- full_df %>% filter(n_year > 5)
-
-# #no major change when removing these
-# feols(hom_rate_100k ~ mean_vhi | munic_dep + Year, data = full_df)
-# feols(hom_rate_100k ~ as.factor(Canicula_Index) | munic_dep + Year, data = full_df)
-# feols(hom_rate_100k ~ mean_vhi |  Departamento + Year, data = full_df)
-# feols(hom_rate_100k ~ as.factor(Canicula_Index) |  Departamento + Year, data = full_df)
-
 ## FE with lags + leads... not sure how to interpret these
 feols(hom_rate_100k ~ l(mean_vhi, 0:2) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
 feols(hom_rate_100k ~ l(Canicula_Index, 0:2) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
@@ -132,7 +110,40 @@ feols(hom_rate_100k ~ f(Canicula_Index, 0:2) | munic_dep + Year, data = full_df,
 m.quad <- feols(hom_rate_100k ~ poly(mean_vhi, 2) | munic_dep + Year, data = full_df, subset = !is.na(full_df$mean_vhi))
 m.log <- feols(hom_rate_100k ~ log(mean_vhi) | munic_dep + Year, data = full_df)
 
-# 6. Heterogeneous effects -------------------------------------
+# 6. Some Robustness Checks -----
+# number of years of data per munic-dep
+# full_df %>%
+#   filter(!is.na(hom_rate_100k)) %>%
+#   group_by(munic_dep) %>%
+#   summarise(n_year = n()) %>%
+#   group_by(n_year) %>%
+#   summarise(n_munic = n())
+
+# full_df <- full_df %>%
+#   filter(!is.na(hom_rate_100k)) %>%
+#   group_by(munic_dep) %>%
+#   mutate(n_year = n())
+
+# most municipalities have at least 6 years of data, remove those 19 that do not
+full_df_test <- full_df %>% filter(n_year > 5)
+
+# #no major change when removing these
+feols(hom_rate_100k ~ mean_vhi | munic_dep + Year, data = full_df_test)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) | munic_dep + Year, data = full_df_test)
+feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df_test)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) | Departamento + Year, data = full_df_test)
+
+# nicaragua spatial units at lower spatial res
+full_df_test <- full_df %>% filter(Country == "Nicaragua")
+
+# #no major change when removing these
+feols(hom_rate_100k ~ mean_vhi | munic_dep + Year, data = full_df_test)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) | munic_dep + Year, data = full_df_test)
+feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df_test)
+feols(hom_rate_100k ~ as.factor(Canicula_Index) | Departamento + Year, data = full_df_test)
+
+
+# 7. Heterogeneous effects -------------------------------------
 # * Population density
 mod.pop_density <- feols(hom_rate_100k ~ mean_vhi * urban_2013 | munic_dep + Year, data = full_df)
 mod.urban <- feols(hom_rate_100k ~ mean_vhi | munic_dep + Year, data = full_df, subset = full_df$urban == 1)
