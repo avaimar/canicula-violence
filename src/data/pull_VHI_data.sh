@@ -10,8 +10,8 @@ fi
 
 cd data_raw_local/VHI
 
-for YEAR in {1982..2010} #valid range = [1982, 2021]
-do
+for YEAR in {1982..2010} # valid range = [1982, 2021]
+do #enumerate the REDICULOUS number of weird prefixes that vary with year
   if ((YEAR <= 1984))
   then
       FILE_PREFIX=NC
@@ -37,8 +37,8 @@ do
       FILE_PREFIX=npp
   fi
 
-  for WEEK_NUM in {27..35}
-  # for WEEK_NUM in {1..52}
+  for WEEK_NUM in {27..35} # for canicula period 
+  # for WEEK_NUM in {1..52} # for full year
   do
     printf -v WEEK_NUM_PADDED "%02d" $WEEK_NUM #zero pad pentad to be 2 digits
     curl --remote-name https://www.star.nesdis.noaa.gov/pub/corp/scsb/wguo/data/Blended_VH_4km/geo_TIFF/VHP.G04.C07.${FILE_PREFIX}.P${YEAR}0${WEEK_NUM_PADDED}.VH.VHI.tif

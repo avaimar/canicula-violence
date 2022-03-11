@@ -35,3 +35,4 @@ cache
 rosm.cache/
 .RDataTmp
 
+.Rproj.user
