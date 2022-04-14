@@ -23,59 +23,12 @@ source(file.path("src", "models", "panel_preprocessing_funcs.R"))
 proj_crs <- 26716
 latlon_crs <- 4326
 
-# 2. Read in Data -----
-admin_bndry_sf <- st_read(
-  file.path(processed_data_fpath, "admin_bndry_cropland.geojson")
+# 2. Read in panel -----
+full_df <- read.csv(
+  file.path(processed_data_fpath, "panel_2013_2020.csv")
 )
-vhi_df <- read.csv(
-  file.path(processed_data_fpath, "Canicula_index_1982_2020.csv")
-)
-# convert canicula index to ordered factor
-vhi_df$Canicula_Label <- factor(vhi_df$Canicula_Label,
-  levels = c("Extreme", "Severe", "Moderate", "Mild", "None")
-)
-hom_df <- read.csv(file.path(processed_data_fpath, "homicide_rates.csv"))
 
-# 3. Build Clean Panel Data -----
-full_sf <- build_clean_panel_sf(admin_bndry_sf, vhi_df, hom_df, panel_start_year = 2013)
-
-# # # look at data coverage by country/year
-# full_sf %>% st_drop_geometry() %>%
-#   filter(!is.na(hom_rate_100k)) %>%
-#   group_by(shapeGroup) %>%
-#   summarise(
-#     min_year = min(Year),
-#     max_year = max(Year)
-#   )
-# # subset to panel period
-# full_sf <- full_sf %>% filter(Year >= 2013) # period with data for >=3 countries
-# Subset to Dry Corridor
-full_sf <- filter(full_sf, in_dry_corridor == TRUE)
-
-
-# Add areas to compute population densities
-full_sf <- full_sf %>%
-  sf::st_transform(full_sf, crs = proj_crs) %>%
-  mutate(area = st_area(geometry)) %>%
-  mutate(area = set_units(area, km^2))
-
-# Compute population density
-full_sf <- full_sf %>%
-  mutate(
-    pop_density = Population / area,
-    urban = ifelse(pop_density > set_units(300, 1 / km^2), 1, 0)
-  )
-
-# Keep density from 2013 for heterogeneous effects
-full_sf <- full_sf %>%
-  group_by(Departamento, Municipio) %>%
-  arrange(Year) %>%
-  mutate(urban_2013 = dplyr::first(urban))
-
-# 4. Prepare data for FE Model -----
-full_df <- st_drop_geometry(full_sf)
-
-# 5. Run FE Model -----
+# 3. Main model (used in first draft) -----
 
 # run FE model with municipality FE (significant effects)
 m1.vhi <- feols(hom_rate_100k ~ mean_vhi | munic_dep + Year, data = full_df)
@@ -89,6 +42,7 @@ save(full_sf, selected.MM.rhs, selected.MM.lhs, selected.MM.fixef, m1.vhi,
   file = file.path(model_data_fpath, "modelmatrix.RData")
 )
 
+# 4. Spatial unit fixed effects ----------
 # no significant effects using department or country FE or country*year department*year FE
 feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df)
 feols(hom_rate_100k ~ as.factor(Canicula_Index) | Departamento + Year, data = full_df)
@@ -99,18 +53,21 @@ feols(hom_rate_100k ~ as.factor(Canicula_Index) | shapeGroup[Year] + Year, data 
 feols(hom_rate_100k ~ mean_vhi | Departamento[Year] + Year, data = full_df)
 feols(hom_rate_100k ~ as.factor(Canicula_Index) | Departamento[Year] + Year, data = full_df)
 
-
+# 5. Lagged models ----------------
 ## FE with lags + leads... not sure how to interpret these
 feols(hom_rate_100k ~ l(mean_vhi, 0:2) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
 feols(hom_rate_100k ~ l(Canicula_Index, 0:2) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
 feols(hom_rate_100k ~ f(mean_vhi, 0:2) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
 feols(hom_rate_100k ~ f(Canicula_Index, 0:2) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
 
-# Functional form
+# one period lag - less strong/significant of an effect
+feols(hom_rate_100k ~ l(mean_vhi, 1) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
+
+# 6. Different Functional forms --------------
 m.quad <- feols(hom_rate_100k ~ poly(mean_vhi, 2) | munic_dep + Year, data = full_df, subset = !is.na(full_df$mean_vhi))
 m.log <- feols(hom_rate_100k ~ log(mean_vhi) | munic_dep + Year, data = full_df)
 
-# 6. Some Robustness Checks -----
+# 7. Some Robustness Checks -----
 # number of years of data per munic-dep
 # full_df %>%
 #   filter(!is.na(hom_rate_100k)) %>%
@@ -143,7 +100,7 @@ feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df_test)
 feols(hom_rate_100k ~ as.factor(Canicula_Index) | Departamento + Year, data = full_df_test)
 
 
-# 7. Heterogeneous effects -------------------------------------
+# 8. Heterogeneous effects -------------------------------------
 # * Population density
 mod.pop_density <- feols(hom_rate_100k ~ mean_vhi * urban_2013 | munic_dep + Year, data = full_df)
 mod.urban <- feols(hom_rate_100k ~ mean_vhi | munic_dep + Year, data = full_df, subset = full_df$urban == 1)
@@ -164,3 +121,14 @@ mod.GTM <- feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df,
 mod.ELS <- feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df, subset = full_df$Country == "El Salvador")
 mod.HOND <- feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df, subset = full_df$Country == "Honduras")
 mod.NIC <- feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df, subset = full_df$Country == "Nicaragua")
+
+# 9. Precipitation / Temperature ----------------
+# Canicular precipitation
+feols(hom_rate_100k ~ precip_canicular | munic_dep + Year, data = full_df)
+
+# Annual precipitation
+feols(hom_rate_100k ~ precip_full | munic_dep + Year, data = full_df)
+
+# Canicular temperature
+
+# Annual temperature
