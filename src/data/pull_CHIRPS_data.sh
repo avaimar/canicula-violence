@@ -15,6 +15,7 @@ cd data_raw_local/CHIRPS
 for YEAR in {2013..2020}
 do 
   for PENTAD in {1..72}
+  #for PENTAD in {38..49} # Canicular pentads
   do
     printf -v PENTAD_PADDED "%02d" $PENTAD #zero pad pentad to be 2 digits
     URL=https://data.chc.ucsb.edu/products/CHIRPS-2.0/camer-carib_pentad/bils/v2p0chirps${YEAR}${PENTAD_PADDED}.tar.gz

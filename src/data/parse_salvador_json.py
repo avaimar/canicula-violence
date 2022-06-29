@@ -3,7 +3,7 @@ import pandas as pd
 import pathlib as plib
 
 gdrive_fpath = plib.Path('/Volumes/GoogleDrive-112161833434429421879/My Drive/Project/')
-outpath = gdrive_fpath / 'Data' / 'Processed' /'elsalvador_municipality_homicidecount_2011_2020.csv'
+outpath = gdrive_fpath / 'Data' / 'Processed' / 'Homicides' /'elsalvador_municipality_homicidecount_2011_2020.csv'
 
 
 with open (gdrive_fpath / 'Data'/ 'Raw'/ 'ElSalvador'/ 'el_salvador_homicide.json') as f:

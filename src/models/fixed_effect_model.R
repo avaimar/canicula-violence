@@ -61,7 +61,7 @@ feols(hom_rate_100k ~ f(mean_vhi, 0:2) | munic_dep + Year, data = full_df, panel
 feols(hom_rate_100k ~ f(Canicula_Index, 0:2) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
 
 # one period lag - less strong/significant of an effect
-feols(hom_rate_100k ~ l(mean_vhi, 1) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
+m.lag1 <- feols(hom_rate_100k ~ l(mean_vhi, 1) | munic_dep + Year, data = full_df, panel.id = ~ munic_dep + Year)
 
 # 6. Different Functional forms --------------
 m.quad <- feols(hom_rate_100k ~ poly(mean_vhi, 2) | munic_dep + Year, data = full_df, subset = !is.na(full_df$mean_vhi))
@@ -124,11 +124,23 @@ mod.NIC <- feols(hom_rate_100k ~ mean_vhi | Departamento + Year, data = full_df,
 
 # 9. Precipitation / Temperature ----------------
 # Canicular precipitation
-feols(hom_rate_100k ~ precip_canicular | munic_dep + Year, data = full_df)
+m.cp <- feols(hom_rate_100k ~ precip_canicular | munic_dep + Year, data = full_df)
 
 # Annual precipitation
-feols(hom_rate_100k ~ precip_full | munic_dep + Year, data = full_df)
+m.ap <- feols(hom_rate_100k ~ precip_full | munic_dep + Year, data = full_df)
 
 # Canicular temperature
+m.ct <- feols(hom_rate_100k ~ temp_canicular | munic_dep + Year, data = full_df)
 
 # Annual temperature
+m.at <- feols(hom_rate_100k ~ temp_annual | munic_dep + Year, data = full_df)
+
+# Heterogeneity with temperature and precipitation
+mod.cp_u <- feols(hom_rate_100k ~ precip_canicular | munic_dep + Year, data = full_df, subset = full_df$urban == 1)
+mod.cp_r <- feols(hom_rate_100k ~ precip_canicular | munic_dep + Year, data = full_df, subset = full_df$urban == 0)
+mod.cp_crop <- feols(hom_rate_100k ~ precip_canicular * cropland | munic_dep + Year, data = full_df)
+
+mod.ct_u <- feols(hom_rate_100k ~ temp_canicular | munic_dep + Year, data = full_df, subset = full_df$urban == 1)
+mod.ct_r <- feols(hom_rate_100k ~ temp_canicular | munic_dep + Year, data = full_df, subset = full_df$urban == 0)
+mod.ct_crop <- feols(hom_rate_100k ~ temp_canicular * cropland | munic_dep + Year, data = full_df)
+
